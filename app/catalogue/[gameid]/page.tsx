@@ -13,12 +13,11 @@ export default async function GamePage({
 
   const games = await getGames();
 
-  const code = decodeURIComponent(gameid);
+  const code = decodeURIComponent(gameid).trim();
 
   const jeu = games.find(
     (item) =>
-      String(item.code_barre ?? "").trim() ===
-      code.trim()
+      String(item.code_barre ?? "").trim() === code
   );
 
   return (
@@ -28,7 +27,7 @@ export default async function GamePage({
         TEST FICHE
       </h1>
 
-      <p className="mt-4">
+      <p className="mt-6">
         Code reçu :
       </p>
 
