@@ -14,22 +14,29 @@ export default async function GamePage({
 
   const games = await getGames();
 
-  const code = decodeURIComponent(gameid).trim
-  
-  const jeu = games.find(
-    (item) =>
-      String(item.code_barre ?? "").trim() === code
-  );
+  const code = decodeURIComponent(gameid).trim();
 
-  /* =====================================================
-     JEU INTROUVABLE
-  ===================================================== */
+  /*
+   * Recherche du jeu
+   */
+
+  const jeu = games.find((item) => {
+    const codeBarre = String(
+      (item as any).code_barre ?? ""
+    ).trim();
+
+    return codeBarre === code;
+  });
+
+  /*
+   * Jeu introuvable
+   */
 
   if (!jeu) {
     return (
-      <main className="min-h-screen bg-[#FFF8E8] p-6">
+      <main className="min-h-screen bg-[#FFF8E8] p-6 md:p-10">
 
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-4xl">
 
           <Link
             href="/catalogue"
@@ -44,12 +51,20 @@ export default async function GamePage({
               🎲
             </div>
 
-            <h1 className="mt-4 text-3xl font-black">
+            <h1 className="mt-5 text-3xl font-black">
               Jeu introuvable
             </h1>
 
             <p className="mt-3 text-gray-600">
-              Ce jeu n'a pas été trouvé dans le catalogue.
+              Impossible de trouver ce jeu dans le catalogue.
+            </p>
+
+            <p className="mt-5 break-all rounded-xl bg-gray-100 p-4 text-sm text-gray-500">
+              Code reçu :
+              <br />
+              <strong>
+                {code}
+              </strong>
             </p>
 
           </div>
@@ -60,13 +75,26 @@ export default async function GamePage({
     );
   }
 
-  /* =====================================================
-     DISPONIBILITÉ
-  ===================================================== */
+  /*
+   * Données du jeu
+   */
+
+  const nom =
+    String((jeu as any).nom ?? "Jeu sans nom").trim();
+
+  const editeur =
+    String((jeu as any).editeur ?? "Non renseigné").trim();
+
+  const codeBarre =
+    String((jeu as any).code_barre ?? "").trim();
+
+  /*
+   * Disponibilité
+   */
 
   const disponibilite = String(
-    jeu.disponibilite ??
-      jeu.disponible ??
+    (jeu as any).disponibilite ??
+      (jeu as any).disponible ??
       ""
   )
     .trim()
@@ -80,106 +108,110 @@ export default async function GamePage({
     disponibilite === "oui" ||
     disponibilite === "true";
 
-  /* =====================================================
-     JOUEURS
-  ===================================================== */
+  /*
+   * Joueurs
+   */
 
   const nombreMin =
-    jeu.nombre_min !== null &&
-    jeu.nombre_min !== undefined
-      ? String(jeu.nombre_min)
+    (jeu as any).nombre_min !== null &&
+    (jeu as any).nombre_min !== undefined &&
+    String((jeu as any).nombre_min).trim() !== ""
+      ? String((jeu as any).nombre_min)
       : "";
 
   const nombreMax =
-    jeu.nombre_max !== null &&
-    jeu.nombre_max !== undefined
-      ? String(jeu.nombre_max)
+    (jeu as any).nombre_max !== null &&
+    (jeu as any).nombre_max !== undefined &&
+    String((jeu as any).nombre_max).trim() !== ""
+      ? String((jeu as any).nombre_max)
       : "";
 
-  let joueurs =
-    "Non renseigné";
+  let joueurs = "Non renseigné";
 
   if (nombreMin && nombreMax) {
-    joueurs =
-      `${nombreMin} à ${nombreMax} joueurs`;
+    joueurs = `${nombreMin} à ${nombreMax} joueurs`;
   } else if (nombreMin) {
-    joueurs =
-      `${nombreMin} joueurs minimum`;
+    joueurs = `${nombreMin} joueurs minimum`;
   } else if (nombreMax) {
-    joueurs =
-      `${nombreMax} joueurs maximum`;
+    joueurs = `${nombreMax} joueurs maximum`;
   }
 
-  /* =====================================================
-     ÂGE
-  ===================================================== */
+  /*
+   * Âge
+   */
 
   const age =
-    jeu.age !== null &&
-    jeu.age !== undefined
-      ? `${jeu.age} ans et plus`
+    (jeu as any).age !== null &&
+    (jeu as any).age !== undefined &&
+    String((jeu as any).age).trim() !== ""
+      ? `${String((jeu as any).age)} ans et plus`
       : "Non renseigné";
 
-  /* =====================================================
-     DURÉE
-  ===================================================== */
+  /*
+   * Durée
+   */
 
   const duree =
-    jeu.duree !== null &&
-    jeu.duree !== undefined &&
-    String(jeu.duree).trim() !== ""
-      ? String(jeu.duree)
+    (jeu as any).duree !== null &&
+    (jeu as any).duree !== undefined &&
+    String((jeu as any).duree).trim() !== ""
+      ? String((jeu as any).duree)
       : "Non renseignée";
 
-  /* =====================================================
-     PRIX
-  ===================================================== */
+  /*
+   * Prix location
+   */
 
   const prixLocation =
-    jeu.prix_location !== null &&
-    jeu.prix_location !== undefined
-      ? `${Number(jeu.prix_location)
+    (jeu as any).prix_location !== null &&
+    (jeu as any).prix_location !== undefined &&
+    String((jeu as any).prix_location).trim() !== ""
+      ? `${Number((jeu as any).prix_location)
           .toFixed(2)
           .replace(".", ",")} €`
       : "Non renseigné";
 
+  /*
+   * Caution
+   */
+
   const prixCaution =
-    jeu.prix_caution !== null &&
-    jeu.prix_caution !== undefined
-      ? `${Number(jeu.prix_caution)
+    (jeu as any).prix_caution !== null &&
+    (jeu as any).prix_caution !== undefined &&
+    String((jeu as any).prix_caution).trim() !== ""
+      ? `${Number((jeu as any).prix_caution)
           .toFixed(2)
           .replace(".", ",")} €`
       : "Non renseignée";
 
-  /* =====================================================
-     DONNÉES PRINCIPALES
-  ===================================================== */
+  /*
+   * Image
+   */
 
-  const nom =
+  const image =
     String(
-      jeu.nom ?? "Jeu sans nom"
+      (jeu as any).image_url ??
+        (jeu as any).image ??
+        ""
     ).trim();
 
-  const editeur =
+  /*
+   * Description
+   */
+
+  const description =
     String(
-      jeu.editeur ?? "Non renseigné"
+      (jeu as any).description ?? ""
     ).trim();
 
-  const codeBarre =
-    String(
-      jeu.code_barre ?? ""
-    ).trim();
-
-  /* =====================================================
-     PAGE
-  ===================================================== */
+  /*
+   * PAGE
+   */
 
   return (
     <main className="min-h-screen bg-[#FFF8E8] p-4 md:p-10">
 
       <div className="mx-auto max-w-4xl">
-
-        {/* RETOUR */}
 
         <Link
           href="/catalogue"
@@ -188,13 +220,9 @@ export default async function GamePage({
           ← Retour au catalogue
         </Link>
 
-        {/* FICHE */}
-
         <div className="overflow-hidden rounded-3xl bg-white shadow-xl">
 
-          {/* =================================================
-              EN-TÊTE
-          ================================================= */}
+          {/* EN-TÊTE */}
 
           <div className="bg-black p-6 text-white md:p-10">
 
@@ -214,9 +242,21 @@ export default async function GamePage({
 
           <div className="p-5 md:p-10">
 
-            {/* =================================================
-                DISPONIBILITÉ
-            ================================================= */}
+            {/* IMAGE */}
+
+            {image && (
+              <div className="mb-8 flex justify-center">
+
+                <img
+                  src={image}
+                  alt={nom}
+                  className="max-h-80 w-full rounded-2xl object-contain"
+                />
+
+              </div>
+            )}
+
+            {/* DISPONIBILITÉ */}
 
             <div
               className={
@@ -227,18 +267,14 @@ export default async function GamePage({
             >
 
               <p className="text-xl font-black">
-
                 {disponible
                   ? "🟢 Disponible"
                   : "🔴 Indisponible"}
-
               </p>
 
             </div>
 
-            {/* =================================================
-                INFORMATIONS
-            ================================================= */}
+            {/* INFORMATIONS */}
 
             <h2 className="mt-8 text-2xl font-black">
               🎲 Informations
@@ -288,9 +324,23 @@ export default async function GamePage({
 
             </div>
 
-            {/* =================================================
-                TARIFS
-            ================================================= */}
+            {/* DESCRIPTION */}
+
+            {description && (
+              <div className="mt-8">
+
+                <h2 className="text-2xl font-black">
+                  📖 Description
+                </h2>
+
+                <p className="mt-4 whitespace-pre-line leading-7 text-gray-700">
+                  {description}
+                </p>
+
+              </div>
+            )}
+
+            {/* TARIFS */}
 
             <h2 className="mt-8 text-2xl font-black">
               💰 Tarifs
@@ -324,11 +374,9 @@ export default async function GamePage({
 
             </div>
 
-            {/* =================================================
-                RÉSERVATION
-            ================================================= */}
+            {/* RÉSERVATION */}
 
-            {disponible && (
+            {disponible ? (
 
               <Link
                 href={`/reservation?gameid=${encodeURIComponent(
@@ -339,9 +387,7 @@ export default async function GamePage({
                 📅 Réserver ce jeu
               </Link>
 
-            )}
-
-            {!disponible && (
+            ) : (
 
               <div className="mt-8 rounded-2xl bg-gray-200 p-5 text-center font-bold text-gray-500">
                 Ce jeu n'est pas disponible actuellement.
@@ -349,16 +395,12 @@ export default async function GamePage({
 
             )}
 
-            {/* =================================================
-                CODE BARRE
-            ================================================= */}
+            {/* CODE BARRE */}
 
             {codeBarre && (
-
               <p className="mt-6 break-all text-center text-sm text-gray-400">
                 Code-barres : {codeBarre}
               </p>
-
             )}
 
           </div>
