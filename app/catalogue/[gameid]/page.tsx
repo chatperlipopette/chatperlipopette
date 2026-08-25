@@ -16,10 +16,6 @@ export default async function GamePage({
 
   const code = decodeURIComponent(gameid).trim();
 
-  /*
-   * Recherche du jeu
-   */
-
   const jeu = games.find((item) => {
     const codeBarre = String(
       (item as any).code_barre ?? ""
@@ -28,30 +24,29 @@ export default async function GamePage({
     return codeBarre === code;
   });
 
-  /*
-   * Jeu introuvable
-   */
+  /* =====================================================
+     JEU INTROUVABLE
+  ===================================================== */
 
   if (!jeu) {
     return (
-      <main className="min-h-screen bg-[#FFF8E8] p-6 md:p-10">
-
+      <main className="min-h-screen bg-[#FFF8E8] p-4 md:p-10">
         <div className="mx-auto max-w-4xl">
 
           <Link
             href="/catalogue"
-            className="font-bold text-gray-700 hover:underline"
+            className="inline-block py-3 font-bold text-gray-700"
           >
             ← Retour au catalogue
           </Link>
 
-          <div className="mt-6 rounded-3xl bg-white p-10 text-center shadow-xl">
+          <div className="mt-4 rounded-3xl bg-white p-8 text-center shadow-xl">
 
-            <div className="text-6xl">
+            <div className="text-5xl">
               🎲
             </div>
 
-            <h1 className="mt-5 text-3xl font-black">
+            <h1 className="mt-4 text-2xl font-black">
               Jeu introuvable
             </h1>
 
@@ -59,38 +54,32 @@ export default async function GamePage({
               Impossible de trouver ce jeu dans le catalogue.
             </p>
 
-            <p className="mt-5 break-all rounded-xl bg-gray-100 p-4 text-sm text-gray-500">
-              Code reçu :
-              <br />
-              <strong>
-                {code}
-              </strong>
-            </p>
-
           </div>
-
         </div>
-
       </main>
     );
   }
 
-  /*
-   * Données du jeu
-   */
+  /* =====================================================
+     DONNÉES
+  ===================================================== */
 
   const nom =
     String((jeu as any).nom ?? "Jeu sans nom").trim();
 
   const editeur =
-    String((jeu as any).editeur ?? "Non renseigné").trim();
+    String(
+      (jeu as any).editeur ?? "Non renseigné"
+    ).trim();
 
   const codeBarre =
-    String((jeu as any).code_barre ?? "").trim();
+    String(
+      (jeu as any).code_barre ?? ""
+    ).trim();
 
-  /*
-   * Disponibilité
-   */
+  /* =====================================================
+     DISPONIBILITÉ
+  ===================================================== */
 
   const disponibilite = String(
     (jeu as any).disponibilite ??
@@ -108,9 +97,9 @@ export default async function GamePage({
     disponibilite === "oui" ||
     disponibilite === "true";
 
-  /*
-   * Joueurs
-   */
+  /* =====================================================
+     JOUEURS
+  ===================================================== */
 
   const nombreMin =
     (jeu as any).nombre_min !== null &&
@@ -136,9 +125,9 @@ export default async function GamePage({
     joueurs = `${nombreMax} joueurs maximum`;
   }
 
-  /*
-   * Âge
-   */
+  /* =====================================================
+     ÂGE
+  ===================================================== */
 
   const age =
     (jeu as any).age !== null &&
@@ -147,9 +136,9 @@ export default async function GamePage({
       ? `${String((jeu as any).age)} ans et plus`
       : "Non renseigné";
 
-  /*
-   * Durée
-   */
+  /* =====================================================
+     DURÉE
+  ===================================================== */
 
   const duree =
     (jeu as any).duree !== null &&
@@ -158,9 +147,9 @@ export default async function GamePage({
       ? String((jeu as any).duree)
       : "Non renseignée";
 
-  /*
-   * Prix location
-   */
+  /* =====================================================
+     PRIX
+  ===================================================== */
 
   const prixLocation =
     (jeu as any).prix_location !== null &&
@@ -171,10 +160,6 @@ export default async function GamePage({
           .replace(".", ",")} €`
       : "Non renseigné";
 
-  /*
-   * Caution
-   */
-
   const prixCaution =
     (jeu as any).prix_caution !== null &&
     (jeu as any).prix_caution !== undefined &&
@@ -184,9 +169,9 @@ export default async function GamePage({
           .replace(".", ",")} €`
       : "Non renseignée";
 
-  /*
-   * Image
-   */
+  /* =====================================================
+     IMAGE
+  ===================================================== */
 
   const image =
     String(
@@ -195,78 +180,90 @@ export default async function GamePage({
         ""
     ).trim();
 
-  /*
-   * Description
-   */
+  /* =====================================================
+     DESCRIPTION
+  ===================================================== */
 
   const description =
     String(
       (jeu as any).description ?? ""
     ).trim();
 
-  /*
-   * PAGE
-   */
+  /* =====================================================
+     PAGE
+  ===================================================== */
 
   return (
-    <main className="min-h-screen bg-[#FFF8E8] p-4 md:p-10">
+    <main className="min-h-screen bg-[#FFF8E8] px-3 py-4 sm:px-5 sm:py-6 md:p-10">
 
       <div className="mx-auto max-w-4xl">
 
+        {/* RETOUR */}
+
         <Link
           href="/catalogue"
-          className="mb-6 inline-block font-bold text-gray-700 hover:underline"
+          className="mb-4 inline-flex items-center py-2 text-base font-bold text-gray-700 hover:underline sm:mb-6 sm:text-lg"
         >
           ← Retour au catalogue
         </Link>
 
+        {/* FICHE */}
+
         <div className="overflow-hidden rounded-3xl bg-white shadow-xl">
 
-          {/* EN-TÊTE */}
+          {/* =================================================
+              EN-TÊTE
+          ================================================= */}
 
-          <div className="bg-black p-6 text-white md:p-10">
+          <div className="bg-black px-5 py-6 text-white sm:px-7 sm:py-8 md:p-10">
 
-            <p className="text-sm font-bold uppercase tracking-widest text-gray-400">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 sm:text-sm">
               Chat'Perlipopette
             </p>
 
-            <h1 className="mt-2 break-words text-3xl font-black md:text-5xl">
+            <h1 className="mt-2 break-words text-3xl font-black leading-tight sm:text-4xl md:text-5xl">
               {nom}
             </h1>
 
-            <p className="mt-3 text-gray-300">
-              {editeur}
-            </p>
+            {editeur && (
+              <p className="mt-2 text-base text-gray-300 sm:text-lg">
+                {editeur}
+              </p>
+            )}
 
           </div>
 
-          <div className="p-5 md:p-10">
+          <div className="px-4 py-5 sm:px-6 sm:py-7 md:p-10">
 
-            {/* IMAGE */}
+            {/* =================================================
+                IMAGE
+            ================================================= */}
 
             {image && (
-              <div className="mb-8 flex justify-center">
+              <div className="mb-6 flex justify-center sm:mb-8">
 
                 <img
                   src={image}
                   alt={nom}
-                  className="max-h-80 w-full rounded-2xl object-contain"
+                  className="max-h-60 w-auto max-w-full rounded-2xl object-contain sm:max-h-72 md:max-h-80"
                 />
 
               </div>
             )}
 
-            {/* DISPONIBILITÉ */}
+            {/* =================================================
+                DISPONIBILITÉ
+            ================================================= */}
 
             <div
               className={
                 disponible
-                  ? "rounded-2xl bg-green-100 p-5 text-center text-green-700"
-                  : "rounded-2xl bg-red-100 p-5 text-center text-red-700"
+                  ? "rounded-2xl bg-green-100 px-4 py-5 text-center text-green-700 sm:py-6"
+                  : "rounded-2xl bg-red-100 px-4 py-5 text-center text-red-700 sm:py-6"
               }
             >
 
-              <p className="text-xl font-black">
+              <p className="text-xl font-black sm:text-2xl">
                 {disponible
                   ? "🟢 Disponible"
                   : "🔴 Indisponible"}
@@ -274,99 +271,117 @@ export default async function GamePage({
 
             </div>
 
-            {/* INFORMATIONS */}
+            {/* =================================================
+                INFORMATIONS
+            ================================================= */}
 
-            <h2 className="mt-8 text-2xl font-black">
+            <h2 className="mt-7 text-2xl font-black sm:mt-9 sm:text-3xl">
               🎲 Informations
             </h2>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-5 sm:grid-cols-2 sm:gap-4">
 
-              <div className="rounded-2xl bg-[#FFF8E8] p-5">
-                <p className="text-sm text-gray-500">
+              <div className="rounded-2xl bg-[#FFF8E8] px-5 py-4 sm:p-5">
+
+                <p className="text-sm text-gray-500 sm:text-base">
                   👥 Nombre de joueurs
                 </p>
 
-                <p className="mt-1 text-lg font-black">
+                <p className="mt-1 text-lg font-black sm:text-xl">
                   {joueurs}
                 </p>
+
               </div>
 
-              <div className="rounded-2xl bg-[#FFF8E8] p-5">
-                <p className="text-sm text-gray-500">
+              <div className="rounded-2xl bg-[#FFF8E8] px-5 py-4 sm:p-5">
+
+                <p className="text-sm text-gray-500 sm:text-base">
                   🎂 Âge
                 </p>
 
-                <p className="mt-1 text-lg font-black">
+                <p className="mt-1 text-lg font-black sm:text-xl">
                   {age}
                 </p>
+
               </div>
 
-              <div className="rounded-2xl bg-[#FFF8E8] p-5">
-                <p className="text-sm text-gray-500">
+              <div className="rounded-2xl bg-[#FFF8E8] px-5 py-4 sm:p-5">
+
+                <p className="text-sm text-gray-500 sm:text-base">
                   ⏱️ Durée
                 </p>
 
-                <p className="mt-1 text-lg font-black">
+                <p className="mt-1 text-lg font-black sm:text-xl">
                   {duree}
                 </p>
+
               </div>
 
-              <div className="rounded-2xl bg-[#FFF8E8] p-5">
-                <p className="text-sm text-gray-500">
+              <div className="rounded-2xl bg-[#FFF8E8] px-5 py-4 sm:p-5">
+
+                <p className="text-sm text-gray-500 sm:text-base">
                   🏢 Éditeur
                 </p>
 
-                <p className="mt-1 break-words text-lg font-black">
+                <p className="mt-1 break-words text-lg font-black sm:text-xl">
                   {editeur}
                 </p>
+
               </div>
 
             </div>
 
-            {/* DESCRIPTION */}
+            {/* =================================================
+                DESCRIPTION
+            ================================================= */}
 
             {description && (
-              <div className="mt-8">
+              <div className="mt-7 sm:mt-9">
 
-                <h2 className="text-2xl font-black">
+                <h2 className="text-2xl font-black sm:text-3xl">
                   📖 Description
                 </h2>
 
-                <p className="mt-4 whitespace-pre-line leading-7 text-gray-700">
-                  {description}
-                </p>
+                <div className="mt-3 rounded-2xl bg-gray-50 p-5 sm:mt-4 sm:p-6">
+
+                  <p className="whitespace-pre-line text-base leading-7 text-gray-700 sm:text-lg">
+                    {description}
+                  </p>
+
+                </div>
 
               </div>
             )}
 
-            {/* TARIFS */}
+            {/* =================================================
+                TARIFS
+            ================================================= */}
 
-            <h2 className="mt-8 text-2xl font-black">
+            <h2 className="mt-7 text-2xl font-black sm:mt-9 sm:text-3xl">
               💰 Tarifs
             </h2>
 
-            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:mt-5 sm:grid-cols-2 sm:gap-4">
 
-              <div className="rounded-2xl bg-[#FFF8E8] p-6">
+              <div className="rounded-2xl bg-[#FFF8E8] px-5 py-5 sm:p-6">
 
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 sm:text-base">
                   Prix de location
                 </p>
 
-                <p className="mt-2 text-3xl font-black text-[#E8B223]">
+                <p className="mt-1 text-3xl font-black text-[#E8B223] sm:text-4xl">
                   {prixLocation}
                 </p>
 
               </div>
 
-              <div className="rounded-2xl bg-gray-100 p-6">
+              <div className="rounded-2xl bg-gray-100 px-5 py-5 sm:p-6">
 
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 sm:text-base">
                   Caution
                 </p>
 
-                <p className="mt-2 text-3xl font-black">
+                <p className="mt-1 text-3xl font-black sm:text-4xl">
                   {prixCaution}
                 </p>
 
@@ -374,31 +389,39 @@ export default async function GamePage({
 
             </div>
 
-            {/* RÉSERVATION */}
+            {/* =================================================
+                RÉSERVATION
+            ================================================= */}
 
-            {disponible ? (
+            <div className="mt-7 sm:mt-9">
 
-              <Link
-                href={`/reservation?gameid=${encodeURIComponent(
-                  codeBarre
-                )}`}
-                className="mt-8 block w-full rounded-2xl bg-black px-6 py-5 text-center text-xl font-black text-white hover:bg-gray-800"
-              >
-                📅 Réserver ce jeu
-              </Link>
+              {disponible ? (
 
-            ) : (
+                <Link
+                  href={`/reservation?gameid=${encodeURIComponent(
+                    codeBarre
+                  )}`}
+                  className="flex min-h-16 w-full items-center justify-center rounded-2xl bg-black px-5 py-4 text-center text-lg font-black text-white shadow-lg transition active:scale-[0.98] hover:bg-gray-800 sm:text-xl"
+                >
+                  📅 Réserver ce jeu
+                </Link>
 
-              <div className="mt-8 rounded-2xl bg-gray-200 p-5 text-center font-bold text-gray-500">
-                Ce jeu n'est pas disponible actuellement.
-              </div>
+              ) : (
 
-            )}
+                <div className="rounded-2xl bg-gray-200 p-5 text-center font-bold text-gray-500">
+                  Ce jeu n'est pas disponible actuellement.
+                </div>
 
-            {/* CODE BARRE */}
+              )}
+
+            </div>
+
+            {/* =================================================
+                CODE BARRE
+            ================================================= */}
 
             {codeBarre && (
-              <p className="mt-6 break-all text-center text-sm text-gray-400">
+              <p className="mt-5 break-all text-center text-xs text-gray-400 sm:text-sm">
                 Code-barres : {codeBarre}
               </p>
             )}
