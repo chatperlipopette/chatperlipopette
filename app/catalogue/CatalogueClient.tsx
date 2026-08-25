@@ -42,172 +42,188 @@ export default function CatalogueClient({
     useState("");
 
   /* =========================================================
-     NETTOYAGE RECHERCHE
+     RECHERCHE
   ========================================================= */
 
   const searchText =
     search.trim().toLowerCase();
 
   /* =========================================================
-     FILTRAGE
+     FILTRAGE + TRI ALPHABÉTIQUE
   ========================================================= */
 
   const filteredGames = useMemo(() => {
-    return games.filter((game) => {
+    return [...games]
+      .filter((game) => {
 
-      /* -------------------------------------------------------
-         RECHERCHE
-      ------------------------------------------------------- */
+        /* -----------------------------------------------------
+           RECHERCHE
+        ----------------------------------------------------- */
 
-      const matchesSearch =
-        !searchText ||
-        game.nom
-          .toLowerCase()
-          .includes(searchText) ||
-        game.editeur
-          .toLowerCase()
-          .includes(searchText);
-
-      if (!matchesSearch) {
-        return false;
-      }
-
-      /* -------------------------------------------------------
-         JOUEURS MINIMUM
-      ------------------------------------------------------- */
-
-      if (minPlayers) {
-        const value =
-          Number(minPlayers);
-
-        if (
-          game.nombre_max !== null &&
-          game.nombre_max < value
-        ) {
-          return false;
-        }
-
-        if (
-          game.nombre_max === null
-        ) {
-          return false;
-        }
-      }
-
-      /* -------------------------------------------------------
-         JOUEURS MAXIMUM
-      ------------------------------------------------------- */
-
-      if (maxPlayers) {
-        const value =
-          Number(maxPlayers);
-
-        if (
-          game.nombre_min !== null &&
-          game.nombre_min > value
-        ) {
-          return false;
-        }
-
-        if (
-          game.nombre_min === null
-        ) {
-          return false;
-        }
-      }
-
-      /* -------------------------------------------------------
-         ÂGE MAXIMUM
-      ------------------------------------------------------- */
-
-      if (maxAge) {
-        const value =
-          Number(maxAge);
-
-        if (
-          game.age !== null &&
-          game.age > value
-        ) {
-          return false;
-        }
-
-        if (game.age === null) {
-          return false;
-        }
-      }
-
-      /* -------------------------------------------------------
-         DURÉE MAXIMUM
-      ------------------------------------------------------- */
-
-      if (maxDuration) {
-        const limit =
-          Number(maxDuration);
-
-        const durationText =
-          String(
-            game.duree || ""
-          ).toLowerCase();
-
-        const match =
-          durationText.match(
-            /\d+/
-          );
-
-        if (!match) {
-          return false;
-        }
-
-        const duration =
-          Number(match[0]);
-
-        if (duration > limit) {
-          return false;
-        }
-      }
-
-      /* -------------------------------------------------------
-         DISPONIBILITÉ
-      ------------------------------------------------------- */
-
-      if (availability) {
-
-        const dispo =
-          String(
-            game.disponibilite || ""
-          )
-            .trim()
+        const matchesSearch =
+          !searchText ||
+          game.nom
             .toLowerCase()
-            .normalize("NFD")
-            .replace(
-              /[\u0300-\u036f]/g,
-              ""
+            .includes(searchText) ||
+          game.editeur
+            .toLowerCase()
+            .includes(searchText);
+
+        if (!matchesSearch) {
+          return false;
+        }
+
+        /* -----------------------------------------------------
+           JOUEURS MINIMUM
+        ----------------------------------------------------- */
+
+        if (minPlayers) {
+          const value =
+            Number(minPlayers);
+
+          if (
+            game.nombre_max !== null &&
+            game.nombre_max < value
+          ) {
+            return false;
+          }
+
+          if (
+            game.nombre_max === null
+          ) {
+            return false;
+          }
+        }
+
+        /* -----------------------------------------------------
+           JOUEURS MAXIMUM
+        ----------------------------------------------------- */
+
+        if (maxPlayers) {
+          const value =
+            Number(maxPlayers);
+
+          if (
+            game.nombre_min !== null &&
+            game.nombre_min > value
+          ) {
+            return false;
+          }
+
+          if (
+            game.nombre_min === null
+          ) {
+            return false;
+          }
+        }
+
+        /* -----------------------------------------------------
+           ÂGE MAXIMUM
+        ----------------------------------------------------- */
+
+        if (maxAge) {
+          const value =
+            Number(maxAge);
+
+          if (
+            game.age !== null &&
+            game.age > value
+          ) {
+            return false;
+          }
+
+          if (game.age === null) {
+            return false;
+          }
+        }
+
+        /* -----------------------------------------------------
+           DURÉE MAXIMUM
+        ----------------------------------------------------- */
+
+        if (maxDuration) {
+          const limit =
+            Number(maxDuration);
+
+          const durationText =
+            String(
+              game.duree || ""
+            ).toLowerCase();
+
+          const match =
+            durationText.match(
+              /\d+/
             );
 
-        if (
-          availability === "dispo" &&
-          dispo !== "dispo" &&
-          dispo !== "disponible" &&
-          dispo !== "oui" &&
-          dispo !== "true"
-        ) {
-          return false;
+          if (!match) {
+            return false;
+          }
+
+          const duration =
+            Number(match[0]);
+
+          if (duration > limit) {
+            return false;
+          }
         }
 
-        if (
-          availability ===
-            "indisponible" &&
-          dispo !== "indispo" &&
-          dispo !== "indisponible" &&
-          dispo !== "non" &&
-          dispo !== "false"
-        ) {
-          return false;
-        }
-      }
+        /* -----------------------------------------------------
+           DISPONIBILITÉ
+        ----------------------------------------------------- */
 
-      return true;
-    });
+        if (availability) {
+
+          const dispo =
+            String(
+              game.disponibilite || ""
+            )
+              .trim()
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(
+                /[\u0300-\u036f]/g,
+                ""
+              );
+
+          if (
+            availability === "dispo" &&
+            dispo !== "dispo" &&
+            dispo !== "disponible" &&
+            dispo !== "oui" &&
+            dispo !== "true"
+          ) {
+            return false;
+          }
+
+          if (
+            availability ===
+              "indisponible" &&
+            dispo !== "indispo" &&
+            dispo !== "indisponible" &&
+            dispo !== "non" &&
+            dispo !== "false"
+          ) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+
+      /* -------------------------------------------------------
+         TRI ALPHABÉTIQUE A → Z
+      ------------------------------------------------------- */
+
+      .sort((a, b) =>
+        a.nom.localeCompare(
+          b.nom,
+          "fr",
+          {
+            sensitivity: "base",
+          }
+        )
+      );
+
   }, [
     games,
     searchText,
@@ -219,7 +235,7 @@ export default function CatalogueClient({
   ]);
 
   /* =========================================================
-     RÉINITIALISER
+     RÉINITIALISER LES FILTRES
   ========================================================= */
 
   function resetFilters() {
@@ -331,7 +347,9 @@ export default function CatalogueClient({
 
         <div className="grid gap-5 md:grid-cols-2">
 
-          {/* JOUEURS MINIMUM */}
+          {/* =================================================
+              JOUEURS MINIMUM
+          ================================================= */}
 
           <div>
 
@@ -389,7 +407,9 @@ export default function CatalogueClient({
 
           </div>
 
-          {/* JOUEURS MAXIMUM */}
+          {/* =================================================
+              JOUEURS MAXIMUM
+          ================================================= */}
 
           <div>
 
@@ -443,7 +463,9 @@ export default function CatalogueClient({
 
           </div>
 
-          {/* ÂGE */}
+          {/* =================================================
+              ÂGE
+          ================================================= */}
 
           <div>
 
@@ -497,7 +519,9 @@ export default function CatalogueClient({
 
           </div>
 
-          {/* DURÉE */}
+          {/* =================================================
+              DURÉE
+          ================================================= */}
 
           <div>
 
@@ -551,7 +575,9 @@ export default function CatalogueClient({
 
           </div>
 
-          {/* DISPONIBILITÉ */}
+          {/* =================================================
+              DISPONIBILITÉ
+          ================================================= */}
 
           <div>
 
@@ -594,17 +620,21 @@ export default function CatalogueClient({
       ===================================================== */}
 
       <p className="mb-6 text-lg text-gray-800">
+
         <strong>
           {filteredGames.length}
         </strong>{" "}
+
         jeu
         {filteredGames.length > 1
           ? "x"
           : ""}{" "}
+
         trouvé
         {filteredGames.length > 1
           ? "s"
           : ""}
+
       </p>
 
       {/* =====================================================
@@ -668,7 +698,9 @@ export default function CatalogueClient({
                   className="overflow-hidden rounded-3xl bg-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
                 >
 
-                  {/* IMAGE */}
+                  {/* =================================================
+                      IMAGE
+                  ================================================= */}
 
                   <div className="flex h-48 items-center justify-center bg-gray-100">
 
@@ -678,7 +710,9 @@ export default function CatalogueClient({
 
                   </div>
 
-                  {/* CONTENU */}
+                  {/* =================================================
+                      CONTENU
+                  ================================================= */}
 
                   <div className="p-6">
 
@@ -701,16 +735,20 @@ export default function CatalogueClient({
 
                       <p>
                         👥{" "}
+
                         {game.nombre_min ??
                           "?"}
+
                         {game.nombre_max
                           ? ` à ${game.nombre_max}`
                           : "+"}{" "}
+
                         joueurs
                       </p>
 
                       <p>
                         🎂{" "}
+
                         {game.age !== null
                           ? `${game.age}+`
                           : "Âge non renseigné"}
@@ -718,13 +756,16 @@ export default function CatalogueClient({
 
                       <p>
                         ⏱️{" "}
+
                         {game.duree ||
                           "Durée non renseignée"}
                       </p>
 
                     </div>
 
-                    {/* PRIX */}
+                    {/* =================================================
+                        PRIX
+                    ================================================= */}
 
                     <div className="mt-5">
 
@@ -736,7 +777,9 @@ export default function CatalogueClient({
 
                     </div>
 
-                    {/* DISPONIBILITÉ */}
+                    {/* =================================================
+                        DISPONIBILITÉ
+                    ================================================= */}
 
                     <div
                       className={`mt-5 rounded-xl px-4 py-3 text-center font-bold ${
@@ -752,7 +795,9 @@ export default function CatalogueClient({
 
                     </div>
 
-                    {/* BOUTON */}
+                    {/* =================================================
+                        BOUTON
+                    ================================================= */}
 
                     <Link
                       href={`/catalogue/${encodeURIComponent(
