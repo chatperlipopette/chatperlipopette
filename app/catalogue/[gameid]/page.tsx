@@ -14,8 +14,8 @@ export default async function GamePage({
 
   const games = await getGames();
 
-  const code = decodeURIComponent(gameid).trim();
-
+  const code = decodeURIComponent(gameid).trim
+  
   const jeu = games.find(
     (item) =>
       String(item.code_barre ?? "").trim() === code
