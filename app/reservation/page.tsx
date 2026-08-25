@@ -35,16 +35,13 @@ export default async function ReservationPage({
   ========================================================= */
 
   const game = games.find((item) => {
+    const codeBarre = String(
+      item.code_barre ?? ""
+    ).trim();
 
-    const codeBarre =
-      String(
-        item.code_barre ?? ""
-      ).trim();
-
-    const nom =
-      String(
-        item.nom ?? ""
-      ).trim();
+    const nom = String(
+      item.nom ?? ""
+    ).trim();
 
     return (
       codeBarre === decodedGameId ||
@@ -64,7 +61,6 @@ export default async function ReservationPage({
   if (!game) {
     return (
       <main className="min-h-screen bg-[#FFF8E8] p-6 md:p-10">
-
         <div className="mx-auto max-w-3xl">
 
           <Link
@@ -91,15 +87,14 @@ export default async function ReservationPage({
             <p className="mt-4 rounded-lg bg-gray-100 p-3 text-sm text-gray-500">
               Identifiant reçu :
               <br />
+
               <strong>
                 {decodedGameId || "aucun"}
               </strong>
             </p>
 
           </div>
-
         </div>
-
       </main>
     );
   }
@@ -109,9 +104,7 @@ export default async function ReservationPage({
   ========================================================= */
 
   const disponibilite = String(
-    game.disponibilite ??
-      game.disponible ??
-      ""
+    game.disponibilite ?? ""
   )
     .trim()
     .toLowerCase()
@@ -128,13 +121,12 @@ export default async function ReservationPage({
     disponibilite === "true";
 
   /* =========================================================
-     PRIX
+     PRIX LOCATION
   ========================================================= */
 
   const prixLocation =
     game.prix_location !== null &&
-    game.prix_location !== undefined &&
-    game.prix_location !== ""
+    game.prix_location !== undefined
       ? `${Number(
           game.prix_location
         )
@@ -142,10 +134,13 @@ export default async function ReservationPage({
           .replace(".", ",")} €`
       : "Prix non renseigné";
 
+  /* =========================================================
+     PRIX CAUTION
+  ========================================================= */
+
   const prixCaution =
     game.prix_caution !== null &&
-    game.prix_caution !== undefined &&
-    game.prix_caution !== ""
+    game.prix_caution !== undefined
       ? `${Number(
           game.prix_caution
         )
@@ -162,7 +157,9 @@ export default async function ReservationPage({
 
       <div className="mx-auto max-w-4xl">
 
-        {/* RETOUR */}
+        {/* =====================================================
+            RETOUR
+        ===================================================== */}
 
         <Link
           href={`/catalogue/${encodeURIComponent(
@@ -177,9 +174,9 @@ export default async function ReservationPage({
 
         <div className="overflow-hidden rounded-3xl bg-white shadow-xl">
 
-          {/* =================================================
+          {/* ===================================================
               EN-TÊTE
-          ================================================= */}
+          =================================================== */}
 
           <div className="bg-black p-8 text-white">
 
@@ -253,13 +250,9 @@ export default async function ReservationPage({
             ================================================= */}
 
             {!disponible && (
-
               <div className="mt-6 rounded-xl bg-red-100 p-5 text-center font-bold text-red-700">
-
                 🔴 Ce jeu n'est actuellement pas disponible.
-
               </div>
-
             )}
 
             {/* =================================================
@@ -267,7 +260,6 @@ export default async function ReservationPage({
             ================================================= */}
 
             {disponible && (
-
               <ReservationForm
                 codeBarre={String(
                   game.code_barre ?? ""
@@ -276,7 +268,6 @@ export default async function ReservationPage({
                   game.nom ?? ""
                 )}
               />
-
             )}
 
           </div>
