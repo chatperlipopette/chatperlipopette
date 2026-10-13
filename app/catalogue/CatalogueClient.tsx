@@ -30,4 +30,211 @@ const CATEGORIES = [
   { value: "enquete", label: "🔎 Enquête" },
   { value: "famille", label: "👨‍👩‍👧 Famille" },
   { value: "a deux", label: "💑 À deux" },
-  { value: "cart
+  { value: "cartes", label: "🃏 Cartes" },
+  { value: "adresse", label: "🎯 Adresse" },
+  { value: "reflexion", label: "🧩 Réflexion" },
+];
+
+function normalize(value: string | null | undefined): string {
+  return (value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function formatPrice(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "Non indiqué";
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export default function CatalogueClient({ games }: Props) {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("tous");
+  const [availability, setAvailability] = useState("tous");
+
+  const filteredGames = useMemo(() => {
+    const normalizedSearch = normalize(search);
+
+    return games.filter((game) => {
+      const searchable = normalize(
+        [game.nom, game.editeur, game.description, game.categories].filter(Boolean).join(" ")
+      );
+
+      const matchesSearch = !normalizedSearch || searchable.includes(normalizedSearch);
+      const normalizedCategories = normalize(game.categories);
+      const matchesCategory =
+        category === "tous" ||
+        normalizedCategories.includes(normalize(category));
+      const normalizedAvailability = normalize(game.disponibilite);
+      const isAvailable =
+        normalizedAvailability === "dispo" ||
+        normalizedAvailability === "disponible" ||
+        normalizedAvailability === "oui";
+      const matchesAvailability =
+        availability === "tous" ||
+        (availability === "disponibles" && isAvailable) ||
+        (availability === "indisponibles" && !isAvailable);
+
+      return matchesSearch && matchesCategory && matchesAvailability;
+    });
+  }, [games, search, category, availability]);
+
+  return (
+    <section>
+      <div className="mb-8 rounded-3xl border border-[#EADCB9] bg-white p-5 shadow-sm md:p-7">
+        <label htmlFor="game-search" className="mb-2 block text-sm font-bold text-gray-700">
+          Rechercher un jeu
+        </label>
+        <input
+          id="game-search"
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Nom du jeu, éditeur, mot-clé…"
+          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base outline-none transition focus:border-[#D6A014] focus:ring-2 focus:ring-[#E8B223]/30"
+        />
+
+        <div className="mt-5">
+          <p className="mb-3 text-sm font-bold text-gray-700">Filtrer par catégorie</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setCategory("tous")}
+              className={`rounded-full border px-4 py-2 text-sm font-bold transition ${category === "tous" ? "border-[#24211B] bg-[#24211B] text-white" : "border-gray-300 bg-white text-gray-800 hover:border-[#E8B223]"}`}
+            >
+              🎲 Toutes
+            </button>
+            {CATEGORIES.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setCategory(item.value)}
+                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${category === item.value ? "border-[#24211B] bg-[#24211B] text-white" : "border-gray-300 bg-white text-gray-800 hover:border-[#E8B223]"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label htmlFor="availability-filter" className="text-sm font-bold text-gray-700">
+            Disponibilité
+          </label>
+          <select
+            id="availability-filter"
+            value={availability}
+            onChange={(event) => setAvailability(event.target.value)}
+            className="rounded-xl border border-gray-300 bg-white px-3 py-2"
+          >
+            <option value="tous">Tous les jeux</option>
+            <option value="disponibles">Disponibles uniquement</option>
+            <option value="indisponibles">Indisponibles uniquement</option>
+          </select>
+          <p className="text-sm text-gray-600 sm:ml-auto">
+            {filteredGames.length} jeu{filteredGames.length > 1 ? "x" : ""} trouvé{filteredGames.length > 1 ? "s" : ""}
+          </p>
+        </div>
+      </div>
+
+      {filteredGames.length === 0 ? (
+        <div className="rounded-3xl border border-[#EADCB9] bg-white p-10 text-center shadow-sm">
+          <div className="text-5xl" aria-hidden="true">🔎</div>
+          <h2 className="mt-4 text-2xl font-black text-gray-900">Aucun jeu trouvé</h2>
+          <p className="mt-2 text-gray-600">Essaie un autre mot-clé ou retire certains filtres.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setCategory("tous");
+              setAvailability("tous");
+            }}
+            className="mt-5 rounded-xl bg-[#E8B223] px-5 py-3 font-bold text-black hover:bg-[#D6A014]"
+          >
+            Réinitialiser les filtres
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredGames.map((game, index) => {
+            const gameId = game.code_barre || game.nom || String(index);
+            const available = ["dispo", "disponible", "oui"].includes(normalize(game.disponibilite));
+
+            return (
+              <article
+                key={gameId}
+                className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#EADCB9] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                {game.image_url ? (
+                  <div className="flex h-52 items-center justify-center bg-[#F8F3E7] p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={game.image_url}
+                      alt={`Boîte du jeu ${game.nom}`}
+                      loading="lazy"
+                      className="h-full w-full object-contain"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-52 items-center justify-center bg-[#F8F3E7] text-6xl" aria-label="Image non disponible">
+                    🎲
+                  </div>
+                )}
+
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <h2 className="text-xl font-black leading-tight text-gray-900">{game.nom}</h2>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                      {available ? "Disponible" : "Indisponible"}
+                    </span>
+                  </div>
+
+                  {game.editeur && <p className="text-sm text-gray-500">Éditeur : {game.editeur}</p>}
+                  {game.categories && <p className="mt-2 text-sm font-semibold text-[#806000]">{game.categories}</p>}
+
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-700">
+                    {(game.nombre_min !== null || game.nombre_max !== null) && (
+                      <p>👥 {game.nombre_min ?? "?"}–{game.nombre_max ?? "?"} joueurs</p>
+                    )}
+                    {game.age !== null && <p>🎂 Dès {game.age} ans</p>}
+                    {game.duree && <p>⏱️ {game.duree}</p>}
+                  </div>
+
+                  {game.description && <p className="mt-4 line-clamp-4 text-sm leading-6 text-gray-600">{game.description}</p>}
+
+                  <div className="mt-auto pt-5">
+                    <div className="flex items-end justify-between gap-3 border-t border-gray-100 pt-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Location</p>
+                        <p className="text-lg font-black text-gray-900">{formatPrice(game.prix_location)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">Caution</p>
+                        <p className="font-bold text-gray-800">{formatPrice(game.prix_caution)}</p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/catalogue/${encodeURIComponent(gameId)}`}
+                      className="mt-4 block rounded-xl bg-[#E8B223] px-4 py-3 text-center font-extrabold text-black transition hover:bg-[#D6A014]"
+                    >
+                      Voir le jeu
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
