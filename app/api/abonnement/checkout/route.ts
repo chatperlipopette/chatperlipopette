@@ -60,11 +60,12 @@ export async function POST(request: Request) {
     if (!response.ok) {
       console.error("SumUp checkout creation failed", response.status, data);
       const apiMessage = String(data?.message || data?.error_message || data?.error || "").slice(0, 240);
+      const errorCode = String(data?.error_code || data?.code || "").slice(0, 80);
+      const errorParam = String(data?.param || data?.parameter || "").slice(0, 80);
+      const detail = [apiMessage, errorCode ? "code=" + errorCode : "", errorParam ? "paramètre=" + errorParam : ""].filter(Boolean).join(" ; ");
       return NextResponse.json(
         {
-          error: apiMessage
-            ? "SumUp (erreur " + response.status + ") : " + apiMessage
-            : "SumUp a refusé la demande (HTTP " + response.status + "). Vérifie le code marchand et les autorisations API.",
+          error: "SumUp (erreur " + response.status + ") : " + (detail || "Vérifie le code marchand et les autorisations API."),
         },
         { status: 502 },
       );
