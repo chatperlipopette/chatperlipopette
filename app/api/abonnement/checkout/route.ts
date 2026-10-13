@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const plan = PLANS[planKey];
     const origin = new URL(request.url).origin;
-    const customerId = "cp-" + createHash("sha256").update(email).digest("hex").slice(0, 24);
+    const customerId = createHash("sha256").update(email).digest("hex").slice(0, 24);
     const reference = "cp-sub-" + randomUUID();
 
     const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
