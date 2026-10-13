@@ -30,6 +30,8 @@ export default function Home() {
           <nav aria-label="Navigation principale" className="flex items-center gap-6 font-bold sm:gap-8">
             <Link href="/" className="underline underline-offset-4">Accueil</Link>
             <Link href="/catalogue" className="transition hover:underline">Catalogue</Link>
+            <a href="#abonnements" className="transition hover:underline">Abonnements</a>
+            <a href="#fidelite" className="transition hover:underline">Fidélité</a>
           </nav>
         </div>
       </header>
@@ -122,6 +124,79 @@ export default function Home() {
             <Link href="/catalogue" className="inline-flex rounded-xl bg-[#E8B223] px-8 py-4 font-extrabold text-black transition hover:bg-[#F7D96C]">
               Trouver mon prochain jeu →
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section id="abonnements" className="bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="font-extrabold uppercase tracking-widest text-[#9A6B00]">Les abonnements</p>
+            <h2 className="mt-3 text-3xl font-black sm:text-4xl">Jouez plus, profitez davantage</h2>
+            <p className="mt-4 text-lg leading-7 text-[#5B5140]">Choisissez la formule adaptée à votre envie de découvrir de nouveaux jeux.</p>
+          </div>
+          <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-2">
+            <article className="rounded-3xl border-2 border-[#E8B223] bg-[#FFF8E8] p-7 shadow-sm">
+              <p className="font-extrabold uppercase tracking-widest text-[#806000]">Club</p>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-4xl font-black">6,99 €</span>
+                <span className="text-[#5B5140]">/ mois</span>
+              </div>
+              <p className="mt-2 text-sm font-semibold text-[#5B5140]">Sans engagement</p>
+              <ul className="mt-6 space-y-3 leading-6">
+                <li>🎲 Une location offerte par mois, jusqu’à 3 €</li>
+                <li>💛 5 % de réduction sur les autres locations</li>
+                <li>⭐ Vous continuez à cumuler vos points fidélité</li>
+                <li>🎂 Un bonus pour votre anniversaire</li>
+                <li>⏰ Accès aux réservations en avance</li>
+              </ul>
+              <a href="#fidelite" className="mt-7 block rounded-xl bg-[#24211B] px-5 py-3 text-center font-extrabold text-white transition hover:bg-black">Voir aussi la fidélité</a>
+            </article>
+            <article className="rounded-3xl border border-[#EADCB9] bg-white p-7 shadow-sm">
+              <p className="font-extrabold uppercase tracking-widest text-[#806000]">Club Premium</p>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-4xl font-black">9,99 €</span>
+                <span className="text-[#5B5140]">/ mois</span>
+              </div>
+              <p className="mt-2 text-sm font-semibold text-[#5B5140]">Pour les joueurs réguliers</p>
+              <p className="mt-5 leading-7 text-[#5B5140]">Une formule supérieure pour profiter encore plus de Chat’Perlipopette. Les avantages spécifiques du Premium doivent être confirmés avant d’activer la souscription.</p>
+              <a href="#fidelite" className="mt-7 block rounded-xl border-2 border-[#24211B] px-5 py-3 text-center font-extrabold transition hover:bg-[#FFF8E8]">Découvrir la fidélité</a>
+            </article>
+          </div>
+          <p className="mx-auto mt-6 max-w-3xl text-center text-sm leading-6 text-[#6B6253]">Information : cette section présente les formules. Vérifie que le paiement récurrent est bien activé dans le parcours d’abonnement avant de proposer la souscription aux visiteurs.</p>
+        </div>
+      </section>
+
+      <section id="fidelite" className="bg-[#FFF1BF]">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-8 sm:py-20 md:grid-cols-[0.8fr_1.2fr] md:items-center">
+          <div>
+            <div className="text-6xl" aria-hidden="true">💛⭐</div>
+            <p className="mt-5 font-extrabold uppercase tracking-widest text-[#806000]">Programme fidélité</p>
+            <h2 className="mt-3 text-3xl font-black sm:text-4xl">Chaque location compte !</h2>
+            <p className="mt-4 text-lg leading-7 text-[#5B5140]">Cumulez des points au fil de vos locations et profitez d’avantages en invitant vos proches.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <article className="rounded-2xl border border-[#EADCB9] bg-white p-6">
+              <span className="text-3xl" aria-hidden="true">⭐</span>
+              <h3 className="mt-3 text-xl font-extrabold">Cumulez des points</h3>
+              <p className="mt-2 leading-6 text-[#5B5140]">1 point pour 5 € dépensés.</p>
+            </article>
+            <article className="rounded-2xl border border-[#EADCB9] bg-white p-6">
+              <span className="text-3xl" aria-hidden="true">🎁</span>
+              <h3 className="mt-3 text-xl font-extrabold">Obtenez une récompense</h3>
+              <p className="mt-2 leading-6 text-[#5B5140]">À 10 points, profitez d’une récompense de 20 %.</p>
+            </article>
+            <article className="rounded-2xl border border-[#EADCB9] bg-white p-6">
+              <span className="text-3xl" aria-hidden="true">🤝</span>
+              <h3 className="mt-3 text-xl font-extrabold">Parrainez un proche</h3>
+              <p className="mt-2 leading-6 text-[#5B5140]">Avec votre code de parrainage, vous obtenez 10 % de remise et votre filleul aussi.</p>
+            </article>
+            <article className="rounded-2xl border border-[#EADCB9] bg-white p-6">
+              <span className="text-3xl" aria-hidden="true">🎲</span>
+              <h3 className="mt-3 text-xl font-extrabold">Continuez à découvrir</h3>
+              <p className="mt-2 leading-6 text-[#5B5140]">Explorez le catalogue pour préparer votre prochaine partie.</p>
+              <Link href="/catalogue" className="mt-4 inline-block font-extrabold underline underline-offset-4">Voir le catalogue →</Link>
+            </article>
           </div>
         </div>
       </section>
