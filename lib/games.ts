@@ -1,9 +1,7 @@
-"use client";
+const GOOGLE_SHEETS_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1DbiNsGdrjT76s70wAFH92OI2gUTyrRlqg8mGtrD3RxVVgLsHQieMXupWs1CYSZkW6TW1N5wVcBuG/pub?gid=0&single=true&output=csv";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-
-type Game = {
+export type Game = {
   code_barre: string;
   nom: string;
   editeur: string;
@@ -15,470 +13,201 @@ type Game = {
   prix_location: number | null;
   prix_caution: number | null;
   description: string | null;
-  categories?: string | null;
+  categories: string;
+  image_url?: string;
 };
 
-type Props = {
-  games: Game[];
-};
+/* NETTOYAGE */
+function clean(value: unknown): string {
+  if (value === null || value === undefined) return "";
 
-const CATEGORIES = [
-  { value: "cooperatif", label: "🤝 Coopératif" },
-  { value: "ambiance", label: "😂 Ambiance" },
-  { value: "strategie", label: "🧠 Stratégie" },
-  { value: "enquete", label: "🔎 Enquête et déduction" },
-  { value: "famille", label: "👨‍👩‍👧 Famille" },
-  { value: "a deux", label: "💑 À deux" },
-  { value: "cartes", label: "🃏 Jeux de cartes" },
-  { value: "rapide", label: "⚡ Jeux rapides" },
-  { value: "bluff", label: "🎭 Bluff" },
-  { value: "expert", label: "🔥 Expert" },
-  { value: "enfants", label: "🧸 Enfants" },
-  { value: "reflexion", label: "💡 Réflexion" },
-  { value: "observation", label: "👀 Observation" },
-  { value: "deduction", label: "🕵️ Déduction" },
-  { value: "gestion", label: "🏗️ Gestion" },
-  { value: "adresse", label: "🎯 Adresse" },
-];
+  return String(value)
+    .replace(/^\uFEFF/, "")
+    .trim();
+}
 
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
+/* NOMBRE */
+function parseNumber(value: unknown): number | null {
+  const text = clean(value)
+    .replace(/\u00A0/g, "")
+    .replace(/\s/g, "")
+    .replace(",", ".");
+
+  if (!text) return null;
+
+  const number = Number(text);
+  return Number.isFinite(number) ? number : null;
+}
+
+/* NOM DE COLONNE */
+function normalizeHeader(value: string): string {
+  return clean(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/* LECTEUR CSV */
+function parseCSV(csv: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < csv.length; i++) {
+    const char = csv[i];
+
+    if (char === '"') {
+      if (inQuotes && csv[i + 1] === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && csv[i + 1] === "\n") i++;
+
+      row.push(cell);
+
+      if (row.some((value) => clean(value) !== "")) {
+        rows.push(row);
+      }
+
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  if (cell !== "" || row.length > 0) {
+    row.push(cell);
+
+    if (row.some((value) => clean(value) !== "")) {
+      rows.push(row);
+    }
+  }
+
+  return rows;
+}
+
+/* TROUVER UNE COLONNE */
+function findColumn(
+  headers: string[],
+  ...possibilities: string[]
+): number {
+  const normalized = possibilities.map(normalizeHeader);
+
+  return headers.findIndex((header) => normalized.includes(header));
+}
+
+/* DISPONIBILITÉ */
+function normalizeAvailability(value: string): string {
+  const text = clean(value)
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+
+  if (["dispo", "disponible", "oui", "yes", "true"].includes(text)) {
+    return "dispo";
+  }
+
+  if (["indispo", "indisponible", "non", "no", "false"].includes(text)) {
+    return "indisponible";
+  }
+
+  return text;
 }
 
-export default function CatalogueClient({ games }: Props) {
-  const [search, setSearch] = useState("");
-  const [minPlayers, setMinPlayers] = useState("");
-  const [maxPlayers, setMaxPlayers] = useState("");
-  const [maxAge, setMaxAge] = useState("");
-  const [maxDuration, setMaxDuration] = useState("");
-  const [availability, setAvailability] = useState("");
-  const [category, setCategory] = useState("");
+/* RÉCUPÉRATION DES JEUX */
+export async function getGames(): Promise<Game[]> {
+  const response = await fetch(GOOGLE_SHEETS_URL, {
+    cache: "no-store",
+  });
 
-  const filteredGames = useMemo(() => {
-    return [...games]
-      .filter((game) => {
-        // Recherche par nom, éditeur ou catégorie
-        const searchText = normalizeText(search);
-
-        const matchesSearch =
-          !searchText ||
-          normalizeText(game.nom).includes(searchText) ||
-          normalizeText(game.editeur).includes(searchText) ||
-          normalizeText(game.categories).includes(searchText);
-
-        if (!matchesSearch) return false;
-
-        // Filtre par catégorie
-        const gameCategories = normalizeText(game.categories)
-          .split(/[,;|]/)
-          .map((value) => value.trim())
-          .filter(Boolean);
-
-        if (category && !gameCategories.includes(category)) {
-          return false;
-        }
-
-        // Nombre minimum de joueurs souhaité
-        if (minPlayers) {
-          const value = Number(minPlayers);
-
-          if (game.nombre_max === null || game.nombre_max < value) {
-            return false;
-          }
-        }
-
-        // Nombre maximum de joueurs souhaité
-        if (maxPlayers) {
-          const value = Number(maxPlayers);
-
-          if (game.nombre_min === null || game.nombre_min > value) {
-            return false;
-          }
-        }
-
-        // Âge maximum
-        if (maxAge) {
-          const value = Number(maxAge);
-
-          if (game.age === null || game.age > value) {
-            return false;
-          }
-        }
-
-        // Durée maximum
-        if (maxDuration) {
-          const match = String(game.duree || "").match(/\d+/);
-
-          if (!match || Number(match[0]) > Number(maxDuration)) {
-            return false;
-          }
-        }
-
-        // Disponibilité
-        if (availability) {
-          const dispo = normalizeText(game.disponibilite);
-
-          const available = [
-            "dispo",
-            "disponible",
-            "oui",
-            "yes",
-            "true",
-          ].includes(dispo);
-
-          if (availability === "dispo" && !available) {
-            return false;
-          }
-
-          if (availability === "indisponible" && available) {
-            return false;
-          }
-        }
-
-        return true;
-      })
-      .sort((a, b) =>
-        a.nom.localeCompare(b.nom, "fr", {
-          sensitivity: "base",
-        })
-      );
-  }, [
-    games,
-    search,
-    category,
-    minPlayers,
-    maxPlayers,
-    maxAge,
-    maxDuration,
-    availability,
-  ]);
-
-  function resetFilters() {
-    setSearch("");
-    setCategory("");
-    setMinPlayers("");
-    setMaxPlayers("");
-    setMaxAge("");
-    setMaxDuration("");
-    setAvailability("");
+  if (!response.ok) {
+    throw new Error("Impossible de récupérer Google Sheets");
   }
 
-  function isAvailable(game: Game) {
-    return [
-      "dispo",
-      "disponible",
-      "oui",
-      "yes",
-      "true",
-    ].includes(normalizeText(game.disponibilite));
-  }
+  const csv = await response.text();
+  const rows = parseCSV(csv);
 
-  function formatPrice(price: number | null) {
-    if (price === null || price === undefined || price === "") {
-      return "Prix non renseigné";
-    }
+  if (rows.length < 2) return [];
 
-    return Number(price).toFixed(2).replace(".", ",") + " €";
-  }
+  const headers = rows[0].map(normalizeHeader);
 
-  return (
-    <div>
-      {/* Recherche */}
-      <div className="mb-6">
-        <input
-          type="text"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="🔎 Rechercher un jeu, un éditeur..."
-          className="w-full rounded-2xl border-2 border-gray-300 bg-white px-5 py-4 text-lg outline-none transition focus:border-[#E8B223]"
-        />
-      </div>
-
-      {/* Filtres */}
-      <div className="mb-8 rounded-3xl bg-white p-6 shadow-lg md:p-8">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <h2 className="text-2xl font-black text-gray-900">
-            🎯 Trouve ton jeu idéal
-          </h2>
-
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="rounded-xl bg-gray-200 px-5 py-3 font-bold text-gray-800 transition hover:bg-gray-300"
-          >
-            🔄 Réinitialiser
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <label className="mb-3 block font-bold text-gray-800">
-            🎲 Choisir une catégorie
-          </label>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCategory("")}
-              aria-pressed={category === ""}
-              className={`rounded-full border-2 px-4 py-2 font-bold transition ${
-                category === ""
-                  ? "border-[#E8B223] bg-[#E8B223] text-gray-900"
-                  : "border-gray-200 bg-white text-gray-700 hover:border-[#E8B223]"
-              }`}
-            >
-              🎲 Tous les jeux
-            </button>
-
-            {CATEGORIES.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setCategory(item.value)}
-                aria-pressed={category === item.value}
-                className={`rounded-full border-2 px-4 py-2 font-bold transition ${
-                  category === item.value
-                    ? "border-[#E8B223] bg-[#E8B223] text-gray-900"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-[#E8B223]"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          {/* Joueurs minimum */}
-          <div>
-            <label className="mb-2 block font-bold text-gray-800">
-              👥 Nombre minimum de joueurs
-            </label>
-            <select
-              value={minPlayers}
-              onChange={(event) => setMinPlayers(event.target.value)}
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-3 outline-none focus:border-[#E8B223]"
-            >
-              <option value="">Tous</option>
-              {[1, 2, 3, 4, 5, 6, 8, 10].map((n) => (
-                <option key={n} value={n}>{n} joueur{n > 1 ? "s" : ""}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Joueurs maximum */}
-          <div>
-            <label className="mb-2 block font-bold text-gray-800">
-              👥 Nombre maximum de joueurs
-            </label>
-            <select
-              value={maxPlayers}
-              onChange={(event) => setMaxPlayers(event.target.value)}
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-3 outline-none focus:border-[#E8B223]"
-            >
-              <option value="">Tous</option>
-              {[1, 2, 3, 4, 5, 6, 8, 10, 12, 20].map((n) => (
-                <option key={n} value={n}>{n} joueur{n > 1 ? "s" : ""}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Âge */}
-          <div>
-            <label className="mb-2 block font-bold text-gray-800">
-              🎂 Âge minimum du jeu
-            </label>
-            <select
-              value={maxAge}
-              onChange={(event) => setMaxAge(event.target.value)}
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-3 outline-none focus:border-[#E8B223]"
-            >
-              <option value="">Tous les âges</option>
-              {[3, 4, 6, 8, 10, 12, 14, 16, 18].map((n) => (
-                <option key={n} value={n}>{n} ans et plus</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Durée */}
-          <div>
-            <label className="mb-2 block font-bold text-gray-800">
-              ⏱️ Durée maximum
-            </label>
-            <select
-              value={maxDuration}
-              onChange={(event) => setMaxDuration(event.target.value)}
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-3 outline-none focus:border-[#E8B223]"
-            >
-              <option value="">Toutes les durées</option>
-              {[
-                ["15", "15 minutes"],
-                ["30", "30 minutes"],
-                ["45", "45 minutes"],
-                ["60", "1 heure"],
-                ["90", "1 h 30"],
-                ["120", "2 heures"],
-                ["180", "3 heures"],
-              ].map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Disponibilité */}
-          <div>
-            <label className="mb-2 block font-bold text-gray-800">
-              📦 Disponibilité
-            </label>
-            <select
-              value={availability}
-              onChange={(event) => setAvailability(event.target.value)}
-              className="w-full rounded-xl border-2 border-gray-300 bg-white px-4 py-3 outline-none focus:border-[#E8B223]"
-            >
-              <option value="">Tous les jeux</option>
-              <option value="dispo">Disponibles uniquement</option>
-              <option value="indisponible">Indisponibles uniquement</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Nombre de résultats */}
-      <p className="mb-6 text-lg text-gray-800">
-        <strong>{filteredGames.length}</strong>{" "}
-        jeu{filteredGames.length > 1 ? "x" : ""} trouvé
-        {filteredGames.length > 1 ? "s" : ""}
-      </p>
-
-      {/* Aucun résultat */}
-      {filteredGames.length === 0 && (
-        <div className="rounded-3xl bg-white p-10 text-center shadow-lg">
-          <div className="text-6xl">🎲</div>
-          <h2 className="mt-4 text-2xl font-black">
-            Aucun jeu trouvé
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Essaie de modifier ta recherche ou tes filtres.
-          </p>
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="mt-6 rounded-xl bg-black px-6 py-3 font-bold text-white"
-          >
-            Réinitialiser les filtres
-          </button>
-        </div>
-      )}
-
-      {/* Cartes des jeux */}
-      {filteredGames.length > 0 && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {filteredGames.map((game, index) => {
-            const available = isAvailable(game);
-            const gameId = String(game.code_barre || game.nom || index);
-
-            const gameCategories = normalizeText(game.categories)
-              .split(/[,;|]/)
-              .map((value) => value.trim())
-              .filter(Boolean);
-
-            return (
-              <article
-                key={`${gameId}-${index}`}
-                className="overflow-hidden rounded-3xl bg-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="flex h-40 items-center justify-center bg-[#FFF8E8]">
-                  <div className="text-7xl">🎲</div>
-                </div>
-
-                <div className="p-6">
-                  <h2 className="text-2xl font-black text-gray-900">
-                    {game.nom}
-                  </h2>
-
-                  {gameCategories.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {gameCategories.map((value) => {
-                        const item = CATEGORIES.find(
-                          (cat) => cat.value === value
-                        );
-
-                        return (
-                          <span
-                            key={value}
-                            className="rounded-full bg-[#FFF1C2] px-3 py-1 text-sm font-bold text-gray-800"
-                          >
-                            {item?.label || value}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <p className="mt-3 text-gray-700">
-                    <strong>Éditeur :</strong>{" "}
-                    {game.editeur || "Non renseigné"}
-                  </p>
-
-                  <div className="mt-3 space-y-1 text-gray-700">
-                    <p>
-                      👥 {game.nombre_min ?? "?"}
-                      {game.nombre_max !== null
-                        ? ` à ${game.nombre_max}`
-                        : "+"} joueurs
-                    </p>
-                    <p>
-                      🎂 {game.age !== null
-                        ? `${game.age}+`
-                        : "Âge non renseigné"}
-                    </p>
-                    <p>
-                      ⏱️ {game.duree || "Durée non renseignée"}
-                    </p>
-                  </div>
-
-                  {game.description && (
-                    <p className="mt-3 text-sm text-gray-600">
-                      {game.description}
-                    </p>
-                  )}
-
-                  <div className="mt-5">
-                    <p className="text-2xl font-black text-[#B8860B]">
-                      {formatPrice(game.prix_location)}
-                    </p>
-                    {game.prix_caution !== null && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        Caution : {formatPrice(game.prix_caution)}
-                      </p>
-                    )}
-                  </div>
-
-                  <div
-                    className={`mt-5 rounded-xl px-4 py-3 text-center font-bold ${
-                      available
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {available ? "🟢 Disponible" : "🔴 Indisponible"}
-                  </div>
-
-                  <Link
-                    href={`/catalogue/${encodeURIComponent(gameId)}`}
-                    className="mt-5 block rounded-xl bg-black px-5 py-4 text-center font-bold text-white transition hover:bg-gray-800"
-                  >
-                    Voir le jeu
-                  </Link>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </div>
+  const codeBarreIndex = findColumn(
+    headers, "colonne_1", "code_barre", "codebarre", "code", "barcode"
   );
+  const nomIndex = findColumn(headers, "nom", "nom_du_jeu", "jeu");
+  const editeurIndex = findColumn(headers, "editeur");
+  const nombreMinIndex = findColumn(
+    headers, "nombre_min", "nombre_minimum", "joueurs_min", "joueurs_minimum"
+  );
+  const nombreMaxIndex = findColumn(
+    headers, "nombre_max", "nombre_maximum", "joueurs_max", "joueurs_maximum"
+  );
+  const dureeIndex = findColumn(headers, "duree", "duree_min", "temps");
+  const ageIndex = findColumn(headers, "age", "age_minimum");
+  const disponibiliteIndex = findColumn(
+    headers, "disponibilite", "disponible", "dispo"
+  );
+  const prixLocationIndex = findColumn(
+    headers, "prix_location", "prix_de_location", "location", "prix"
+  );
+  const prixCautionIndex = findColumn(
+    headers, "prix_caution", "caution", "prix_de_caution"
+  );
+  const descriptionIndex = findColumn(
+    headers, "description", "descriptif", "description_du_jeu", "texte_descriptif"
+  );
+  const categoriesIndex = findColumn(
+    headers, "categories", "categorie", "type_de_jeu"
+  );
+  const imageUrlIndex = findColumn(
+    headers, "image_url", "image", "url_image"
+  );
+
+  const games: Game[] = [];
+
+  for (const row of rows.slice(1)) {
+    const get = (index: number): string => {
+      if (index < 0 || index >= row.length) return "";
+      return clean(row[index]);
+    };
+
+    const nom = get(nomIndex) || get(codeBarreIndex) || "Jeu sans nom";
+
+    games.push({
+      code_barre: get(codeBarreIndex),
+      nom,
+      editeur: get(editeurIndex),
+      nombre_min: parseNumber(get(nombreMinIndex)),
+      nombre_max: parseNumber(get(nombreMaxIndex)),
+      duree: get(dureeIndex),
+      age: parseNumber(get(ageIndex)),
+      disponibilite: normalizeAvailability(get(disponibiliteIndex)),
+      prix_location: parseNumber(get(prixLocationIndex)),
+      prix_caution: parseNumber(get(prixCautionIndex)),
+      description: get(descriptionIndex) || null,
+      categories: get(categoriesIndex),
+      image_url: get(imageUrlIndex) || undefined,
+    });
+  }
+
+  console.log(`Catalogue chargé : ${games.length} jeux`);
+
+  return games;
 }
