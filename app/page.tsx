@@ -150,7 +150,7 @@ export default function Home() {
                 <li>🎂 Un bonus pour votre anniversaire</li>
                 <li>⏰ Accès aux réservations en avance</li>
               </ul>
-              <a href="#fidelite" className="mt-7 block rounded-xl bg-[#24211B] px-5 py-3 text-center font-extrabold text-white transition hover:bg-black">Voir aussi la fidélité</a>
+              <Link href="/abonnement?plan=club" className="mt-7 block rounded-xl bg-[#24211B] px-5 py-3 text-center font-extrabold text-white transition hover:bg-black">Choisir Club →</Link>
             </article>
             <article className="rounded-3xl border border-[#EADCB9] bg-white p-7 shadow-sm">
               <p className="font-extrabold uppercase tracking-widest text-[#806000]">Club Premium</p>
@@ -160,7 +160,7 @@ export default function Home() {
               </div>
               <p className="mt-2 text-sm font-semibold text-[#5B5140]">Pour les joueurs réguliers</p>
               <p className="mt-5 leading-7 text-[#5B5140]">Une formule supérieure pour profiter encore plus de Chat’Perlipopette. Les avantages spécifiques du Premium doivent être confirmés avant d’activer la souscription.</p>
-              <a href="#fidelite" className="mt-7 block rounded-xl border-2 border-[#24211B] px-5 py-3 text-center font-extrabold transition hover:bg-[#FFF8E8]">Découvrir la fidélité</a>
+              <Link href="/abonnement?plan=premium" className="mt-7 block rounded-xl border-2 border-[#24211B] px-5 py-3 text-center font-extrabold transition hover:bg-[#FFF8E8]">Choisir Club Premium →</Link>
             </article>
           </div>
           <p className="mx-auto mt-6 max-w-3xl text-center text-sm leading-6 text-[#6B6253]">Information : cette section présente les formules. Vérifie que le paiement récurrent est bien activé dans le parcours d’abonnement avant de proposer la souscription aux visiteurs.</p>
