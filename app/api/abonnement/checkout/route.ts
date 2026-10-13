@@ -51,6 +51,7 @@ export async function POST(request: Request) {
         customer_id: customerId,
         purpose: "SETUP_RECURRING_PAYMENT",
         redirect_url: `${origin}/abonnement/retour`,
+        return_url: `${origin}/api/abonnement/notification`,
         hosted_checkout: { enabled: true },
       }),
       cache: "no-store",
@@ -59,8 +60,13 @@ export async function POST(request: Request) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       console.error("SumUp checkout creation failed", response.status, data);
+      const apiMessage = String(data?.message || data?.error_message || data?.error || "").slice(0, 240);
       return NextResponse.json(
-        { error: "SumUp n'a pas pu préparer le paiement. Vérifie la configuration et les autorisations de la clé API." },
+        {
+          error: apiMessage
+            ? "SumUp (erreur " + response.status + ") : " + apiMessage
+            : "SumUp a refusé la demande (HTTP " + response.status + "). Vérifie le code marchand et les autorisations API.",
+        },
         { status: 502 },
       );
     }
