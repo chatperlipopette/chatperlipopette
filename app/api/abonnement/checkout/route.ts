@@ -51,7 +51,6 @@ export async function POST(request: Request) {
         customer_id: customerId,
         purpose: "SETUP_RECURRING_PAYMENT",
         redirect_url: `${origin}/abonnement/retour`,
-        return_url: `${origin}/api/abonnement/notification`,
         hosted_checkout: { enabled: true },
       }),
       cache: "no-store",
