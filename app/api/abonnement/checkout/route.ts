@@ -25,10 +25,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Le consentement aux paiements récurrents est obligatoire." }, { status: 400 });
     }
 
-    const apiKey = process.env.SUMUP_API_KEY;
-    const merchantCode = process.env.SUMUP_MERCHANT_CODE;
-    if (!apiKey || !merchantCode) {
-      return NextResponse.json({ error: "La configuration SumUp côté serveur est incomplète." }, { status: 500 });
+    const apiKey = process.env.SUMUP_API_KEY?.trim();
+    const merchantCode = process.env.SUMUP_MERCHANT_CODE?.trim();
+    const missingVariables = [
+      !apiKey ? "SUMUP_API_KEY" : "",
+      !merchantCode ? "SUMUP_MERCHANT_CODE" : "",
+    ].filter(Boolean);
+    if (missingVariables.length > 0) {
+      console.error("Missing SumUp environment variables:", missingVariables.join(", "));
+      return NextResponse.json({
+        error: "Configuration SumUp incomplète : variable(s) vide(s) ou absente(s) : " + missingVariables.join(", ") + ". Vérifie l'environnement Production et redéploie.",
+      }, { status: 500 });
     }
 
     const plan = PLANS[planKey];
