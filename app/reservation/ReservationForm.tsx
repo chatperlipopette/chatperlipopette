@@ -246,7 +246,6 @@ export default function ReservationForm({
           ? error.message
           : "Impossible de préparer le paiement. Veuillez réessayer."
       );
-    }
     } finally {
 
       setEnvoi(false);
