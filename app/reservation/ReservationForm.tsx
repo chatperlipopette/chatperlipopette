@@ -565,7 +565,7 @@ export default function ReservationForm({
 
           {envoi
             ? "⏳ Envoi en cours..."
-            : "📅 Envoyer ma demande"}
+            : "💳 Continuer vers le paiement de l’acompte"}
 
         </button>
 
