@@ -376,20 +376,24 @@ export default function ReservationForm({
 
         </section>
 
-        {nombreJours > 0 && (
-          <section className="rounded-2xl border-2 border-[#E8B223] bg-[#FFF8E8] p-6">
-            <h2 className="text-2xl font-bold text-gray-900">💳 Récapitulatif du paiement</h2>
+        <section className="rounded-2xl border-2 border-[#E8B223] bg-[#FFF8E8] p-6">
+          <h2 className="text-2xl font-bold text-gray-900">💳 Acompte de réservation (30 %)</h2>
+          {nombreJours > 0 ? (
             <div className="mt-4 space-y-2 text-gray-700">
               <p>Durée de location : <strong>{nombreJours} jour{nombreJours > 1 ? "s" : ""}</strong></p>
               <p>Prix total estimé : <strong>{totalLocation.toFixed(2).replace(".", ",")} €</strong></p>
               <p className="text-lg">Acompte de 30 % : <strong className="text-[#9A6B00]">{acompte.toFixed(2).replace(".", ",")} €</strong></p>
               <p>Solde restant : <strong>{(totalLocation - acompte).toFixed(2).replace(".", ",")} €</strong></p>
             </div>
-            <p className="mt-3 text-sm text-gray-600">
-              Le montant affiché est calculé selon le prix journalier du jeu et les dates choisies.
+          ) : (
+            <p className="mt-3 text-gray-700">
+              Choisissez la date de début et la date de retour pour calculer le montant de votre acompte.
             </p>
-          </section>
-        )}
+          )}
+          <p className="mt-3 text-sm text-gray-600">
+            L’acompte correspond à 30 % du prix de location estimé. La caution est séparée. Le paiement en ligne n’est pas encore activé ici.
+          </p>
+        </section>
 
         {/* =================================================
             IDENTITÉ
