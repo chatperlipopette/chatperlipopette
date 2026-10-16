@@ -207,48 +207,46 @@ export default function ReservationForm({
     ===================================================== */
 
     try {
-
-      await fetch(
-        GOOGLE_SCRIPT_URL,
-        {
-          method: "POST",
-
-          mode: "no-cors",
-
-          headers: {
-            "Content-Type":
-              "text/plain;charset=utf-8",
-          },
-
-          body:
-            JSON.stringify(data),
-        }
-      );
-
-      /* ===================================================
-         SUCCÈS
-      =================================================== */
-
-      setMessageSucces(true);
-
-      form.reset();
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
+      // Enregistrer la demande avec le statut de paiement en attente.
+      await fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          ...data,
+          statut_paiement: "En attente de paiement de l'acompte",
+        }),
       });
 
+      // Créer le paiement unique de l'acompte sur SumUp.
+      const paymentResponse = await fetch("/api/reservation/acompte", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: acompte,
+          game: jeu,
+        }),
+      });
+
+      const paymentData = await paymentResponse.json().catch(() => ({}));
+
+      if (!paymentResponse.ok || !paymentData.checkoutUrl) {
+        throw new Error(
+          paymentData.error || "Impossible de créer le paiement de l'acompte."
+        );
+      }
+
+      // Redirection vers la page sécurisée SumUp.
+      window.location.assign(paymentData.checkoutUrl);
+      return;
     } catch (error) {
-
-      console.error(
-        "Erreur réservation :",
-        error
-      );
-
+      console.error("Erreur paiement acompte :", error);
       setMessageErreur(
-        "Impossible d'envoyer la réservation. Veuillez réessayer."
+        error instanceof Error
+          ? error.message
+          : "Impossible de préparer le paiement. Veuillez réessayer."
       );
-
+    }
     } finally {
 
       setEnvoi(false);
