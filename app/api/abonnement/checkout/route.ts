@@ -67,12 +67,10 @@ export async function POST(request: Request) {
       process.env.SUMUP_MERCHANT_CODE?.trim();
 
     if (!apiKey || !merchantCode) {
-      console.error("Configuration SumUp manquante.");
-
       return NextResponse.json(
         {
           error:
-            "Configuration SumUp incomplète. Vérifie SUMUP_API_KEY et SUMUP_MERCHANT_CODE dans Vercel.",
+            "Configuration SumUp incomplète dans Vercel.",
         },
         { status: 500 },
       );
@@ -81,56 +79,31 @@ export async function POST(request: Request) {
     const plan = PLANS[planKey];
     const origin = new URL(request.url).origin;
 
-    // Identifiant client stable pour cette adresse e-mail.
+    // Identifiant stable de 16 caractères.
     const customerId = createHash("sha256")
       .update(email)
       .digest("hex")
-      .slice(0, 32);
+      .slice(0, 16);
 
-    // 1. Créer le client dans SumUp.
+    // Étape 1 : créer le client SumUp.
     const customerResponse = await sumupRequest(
       "/customers",
       apiKey,
       "POST",
       {
         customer_id: customerId,
-        personal_details: {
-          email,
-        },
+        personal_details: { email },
       },
     );
 
-    // Si le client existe déjà, on vérifie qu'il est accessible.
     if (
       !customerResponse.ok &&
-      customerResponse.status === 409
+      customerResponse.status !== 409
     ) {
-      const existingCustomer = await sumupRequest(
-        `/customers/${encodeURIComponent(customerId)}`,
-        apiKey,
-        "GET",
-      );
-
-      if (!existingCustomer.ok) {
-        console.error(
-          "SumUp customer lookup failed:",
-          existingCustomer.status,
-          await existingCustomer.text(),
-        );
-
-        return NextResponse.json(
-          {
-            error:
-              "Le client existe peut-être déjà, mais SumUp n'a pas permis de le vérifier. Vérifie les autorisations API.",
-          },
-          { status: 502 },
-        );
-      }
-    } else if (!customerResponse.ok) {
       const detail = await customerResponse.text();
 
       console.error(
-        "SumUp customer creation failed:",
+        "SumUp customer error:",
         customerResponse.status,
         detail,
       );
@@ -138,13 +111,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "SumUp n'a pas pu créer le client. Vérifie la clé API et les autorisations customers.write ou payment_instruments.",
+            "Erreur lors de la création du client SumUp. Vérifie les autorisations API et les logs Vercel.",
         },
         { status: 502 },
       );
     }
 
-    // 2. Créer le checkout d'initialisation du paiement récurrent.
+    // Étape 2 : créer le checkout récurrent.
     const checkoutResponse = await sumupRequest(
       "/checkouts",
       apiKey,
@@ -163,43 +136,34 @@ export async function POST(request: Request) {
       },
     );
 
-    const checkoutData = await checkoutResponse
+    const data = await checkoutResponse
       .json()
       .catch(() => ({}));
 
     if (!checkoutResponse.ok) {
       console.error(
-        "SumUp checkout creation failed:",
+        "SumUp checkout error:",
         checkoutResponse.status,
-        checkoutData,
+        data,
       );
 
       return NextResponse.json(
         {
           error:
-            "SumUp (erreur " +
-            checkoutResponse.status +
-            ") : " +
+            `SumUp (erreur ${checkoutResponse.status}) : ` +
             String(
-              checkoutData?.message ||
-                checkoutData?.detail ||
-                checkoutData?.error_message ||
-                checkoutData?.title ||
-                "Impossible de créer le paiement.",
+              data?.message ||
+                data?.detail ||
+                data?.error_message ||
+                data?.title ||
+                "Échec de création du paiement.",
             ).slice(0, 240),
         },
         { status: 502 },
       );
     }
 
-    if (
-      !checkoutData.hosted_checkout_url ||
-      !checkoutData.id
-    ) {
-      console.error(
-        "SumUp checkout URL or ID missing.",
-      );
-
+    if (!data.hosted_checkout_url || !data.id) {
       return NextResponse.json(
         {
           error:
@@ -210,8 +174,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      checkoutUrl: checkoutData.hosted_checkout_url,
-      checkoutId: checkoutData.id,
+      checkoutUrl: data.hosted_checkout_url,
+      checkoutId: data.id,
       plan: planKey,
       amount: plan.amount,
     });
