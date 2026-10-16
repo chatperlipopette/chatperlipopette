@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { createHash, randomUUID } from "node:crypto";
 
@@ -8,91 +9,221 @@ const PLANS = {
   premium: { name: "Club Premium", amount: 9.99 },
 } as const;
 
+const SUMUP_API = "https://api.sumup.com/v0.1";
+
+async function sumupRequest(
+  path: string,
+  apiKey: string,
+  method: "GET" | "POST",
+  body?: Record<string, unknown>,
+) {
+  return fetch(`${SUMUP_API}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    cache: "no-store",
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
     const planKey = body?.plan as keyof typeof PLANS;
-    const email = String(body?.email || "").trim().toLowerCase();
+    const email = String(body?.email || "")
+      .trim()
+      .toLowerCase();
     const consent = body?.consent === true;
 
-    if (!(planKey in PLANS)) {
-      return NextResponse.json({ error: "Formule invalide." }, { status: 400 });
+    if (!Object.prototype.hasOwnProperty.call(PLANS, planKey)) {
+      return NextResponse.json(
+        { error: "Formule invalide." },
+        { status: 400 },
+      );
     }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Saisis une adresse e-mail valide." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Saisis une adresse e-mail valide." },
+        { status: 400 },
+      );
     }
+
     if (!consent) {
-      return NextResponse.json({ error: "Le consentement aux paiements récurrents est obligatoire." }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "Le consentement aux paiements récurrents est obligatoire.",
+        },
+        { status: 400 },
+      );
     }
 
     const apiKey = process.env.SUMUP_API_KEY?.trim();
-    const merchantCode = process.env.SUMUP_MERCHANT_CODE?.trim();
-    const missingVariables = [
-      !apiKey ? "SUMUP_API_KEY" : "",
-      !merchantCode ? "SUMUP_MERCHANT_CODE" : "",
-    ].filter(Boolean);
-    if (missingVariables.length > 0) {
-      console.error("Missing SumUp environment variables:", missingVariables.join(", "));
-      return NextResponse.json({
-        error: "Configuration SumUp incomplète : variable(s) vide(s) ou absente(s) : " + missingVariables.join(", ") + ". Vérifie l'environnement Production et redéploie.",
-      }, { status: 500 });
+    const merchantCode =
+      process.env.SUMUP_MERCHANT_CODE?.trim();
+
+    if (!apiKey || !merchantCode) {
+      console.error("Configuration SumUp manquante.");
+
+      return NextResponse.json(
+        {
+          error:
+            "Configuration SumUp incomplète. Vérifie SUMUP_API_KEY et SUMUP_MERCHANT_CODE dans Vercel.",
+        },
+        { status: 500 },
+      );
     }
 
     const plan = PLANS[planKey];
     const origin = new URL(request.url).origin;
-    const customerId = createHash("sha256").update(email).digest("hex").slice(0, 16);
-    const reference = "cp-sub-" + randomUUID();
 
-    const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        checkout_reference: reference,
-        amount: plan.amount,
-        currency: "EUR",
-        merchant_code: merchantCode,
-        description: `Chat'Perlipopette - ${plan.name} - abonnement mensuel`,
+    // Identifiant client stable pour cette adresse e-mail.
+    const customerId = createHash("sha256")
+      .update(email)
+      .digest("hex")
+      .slice(0, 32);
+
+    // 1. Créer le client dans SumUp.
+    const customerResponse = await sumupRequest(
+      "/customers",
+      apiKey,
+      "POST",
+      {
         customer_id: customerId,
-        purpose: "SETUP_RECURRING_PAYMENT",
-        redirect_url: `${origin}/abonnement/retour`,
-        hosted_checkout: { enabled: true },
-      }),
-      cache: "no-store",
-    });
+        personal_details: {
+          email,
+        },
+      },
+    );
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      console.error("SumUp checkout creation failed", response.status, data);
-      const apiMessage = String(data?.message || data?.error_message || data?.error || "").slice(0, 240);
-      const errorCode = String(data?.error_code || data?.code || "").slice(0, 80);
-      const errorParam = String(data?.param || data?.parameter || "").slice(0, 80);
-      const detail = [apiMessage, errorCode ? "code=" + errorCode : "", errorParam ? "paramètre=" + errorParam : ""].filter(Boolean).join(" ; ");
+    // Si le client existe déjà, on vérifie qu'il est accessible.
+    if (
+      !customerResponse.ok &&
+      customerResponse.status === 409
+    ) {
+      const existingCustomer = await sumupRequest(
+        `/customers/${encodeURIComponent(customerId)}`,
+        apiKey,
+        "GET",
+      );
+
+      if (!existingCustomer.ok) {
+        console.error(
+          "SumUp customer lookup failed:",
+          existingCustomer.status,
+          await existingCustomer.text(),
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "Le client existe peut-être déjà, mais SumUp n'a pas permis de le vérifier. Vérifie les autorisations API.",
+          },
+          { status: 502 },
+        );
+      }
+    } else if (!customerResponse.ok) {
+      const detail = await customerResponse.text();
+
+      console.error(
+        "SumUp customer creation failed:",
+        customerResponse.status,
+        detail,
+      );
+
       return NextResponse.json(
         {
-          error: "SumUp (erreur " + response.status + ") : " + (detail || "Vérifie le code marchand et les autorisations API."),
+          error:
+            "SumUp n'a pas pu créer le client. Vérifie la clé API et les autorisations customers.write ou payment_instruments.",
         },
         { status: 502 },
       );
     }
 
-    if (!data.hosted_checkout_url || !data.id) {
-      console.error("SumUp response missing checkout URL or ID", data);
-      return NextResponse.json({ error: "SumUp n'a pas renvoyé de lien de paiement exploitable." }, { status: 502 });
+    // 2. Créer le checkout d'initialisation du paiement récurrent.
+    const checkoutResponse = await sumupRequest(
+      "/checkouts",
+      apiKey,
+      "POST",
+      {
+        checkout_reference: `cp-sub-${randomUUID()}`,
+        amount: plan.amount,
+        currency: "EUR",
+        merchant_code: merchantCode,
+        description:
+          `Chat'Perlipopette - ${plan.name} - abonnement mensuel`,
+        customer_id: customerId,
+        purpose: "SETUP_RECURRING_PAYMENT",
+        redirect_url: `${origin}/abonnement/retour`,
+        hosted_checkout: { enabled: true },
+      },
+    );
+
+    const checkoutData = await checkoutResponse
+      .json()
+      .catch(() => ({}));
+
+    if (!checkoutResponse.ok) {
+      console.error(
+        "SumUp checkout creation failed:",
+        checkoutResponse.status,
+        checkoutData,
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "SumUp (erreur " +
+            checkoutResponse.status +
+            ") : " +
+            String(
+              checkoutData?.message ||
+                checkoutData?.detail ||
+                checkoutData?.error_message ||
+                checkoutData?.title ||
+                "Impossible de créer le paiement.",
+            ).slice(0, 240),
+        },
+        { status: 502 },
+      );
     }
 
-    // Important: this creates only the initial recurring-payment setup checkout.
-    // A recurring mandate/token must be confirmed and stored server-side before monthly charges can be made.
+    if (
+      !checkoutData.hosted_checkout_url ||
+      !checkoutData.id
+    ) {
+      console.error(
+        "SumUp checkout URL or ID missing.",
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "SumUp n'a pas renvoyé de lien de paiement valide.",
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json({
-      checkoutUrl: data.hosted_checkout_url,
-      checkoutId: data.id,
+      checkoutUrl: checkoutData.hosted_checkout_url,
+      checkoutId: checkoutData.id,
       plan: planKey,
       amount: plan.amount,
     });
   } catch (error) {
-    console.error("Subscription checkout error", error);
-    return NextResponse.json({ error: "Impossible de préparer le paiement pour le moment." }, { status: 500 });
+    console.error("Subscription checkout error:", error);
+
+    return NextResponse.json(
+      {
+        error:
+          "Impossible de préparer le paiement pour le moment.",
+      },
+      { status: 500 },
+    );
   }
 }
