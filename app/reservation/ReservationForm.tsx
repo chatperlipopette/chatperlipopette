@@ -16,6 +16,7 @@ const GOOGLE_SCRIPT_URL =
 type Props = {
   codeBarre: string;
   jeu: string;
+  prixLocation: number;
 };
 
 /* =========================================================
@@ -25,6 +26,7 @@ type Props = {
 export default function ReservationForm({
   codeBarre,
   jeu,
+  prixLocation,
 }: Props) {
 
   /* =======================================================
@@ -48,6 +50,25 @@ export default function ReservationForm({
     new Date()
       .toISOString()
       .split("T")[0];
+
+  const [dateDebutSelectionnee, setDateDebutSelectionnee] = useState("");
+  const [dateRetourSelectionnee, setDateRetourSelectionnee] = useState("");
+
+  const nombreJours =
+    dateDebutSelectionnee && dateRetourSelectionnee &&
+    dateRetourSelectionnee >= dateDebutSelectionnee
+      ? Math.max(
+          1,
+          Math.ceil(
+            (new Date(dateRetourSelectionnee + "T00:00:00").getTime() -
+              new Date(dateDebutSelectionnee + "T00:00:00").getTime()) /
+              86400000
+          )
+        )
+      : 0;
+
+  const totalLocation = Math.round(prixLocation * nombreJours * 100) / 100;
+  const acompte = Math.round(totalLocation * 30) / 100;
 
   /* =======================================================
      ENVOI
@@ -132,6 +153,18 @@ export default function ReservationForm({
 
       date_retour:
         dateRetour,
+
+      nombre_jours:
+        nombreJours,
+
+      prix_location_journalier:
+        prixLocation,
+
+      total_location:
+        totalLocation,
+
+      acompte_30_pourcent:
+        acompte,
 
       prenom:
         String(
@@ -309,6 +342,7 @@ export default function ReservationForm({
                 name="date_debut"
                 type="date"
                 min={aujourdHui}
+                onChange={(event) => setDateDebutSelectionnee(event.target.value)}
                 required
                 className="w-full rounded-xl border-2 border-gray-300 bg-white p-4 outline-none focus:border-[#E8B223]"
               />
@@ -330,7 +364,8 @@ export default function ReservationForm({
                 id="date-retour"
                 name="date_retour"
                 type="date"
-                min={aujourdHui}
+                min={dateDebutSelectionnee || aujourdHui}
+                onChange={(event) => setDateRetourSelectionnee(event.target.value)}
                 required
                 className="w-full rounded-xl border-2 border-gray-300 bg-white p-4 outline-none focus:border-[#E8B223]"
               />
@@ -340,6 +375,21 @@ export default function ReservationForm({
           </div>
 
         </section>
+
+        {nombreJours > 0 && (
+          <section className="rounded-2xl border-2 border-[#E8B223] bg-[#FFF8E8] p-6">
+            <h2 className="text-2xl font-bold text-gray-900">💳 Récapitulatif du paiement</h2>
+            <div className="mt-4 space-y-2 text-gray-700">
+              <p>Durée de location : <strong>{nombreJours} jour{nombreJours > 1 ? "s" : ""}</strong></p>
+              <p>Prix total estimé : <strong>{totalLocation.toFixed(2).replace(".", ",")} €</strong></p>
+              <p className="text-lg">Acompte de 30 % : <strong className="text-[#9A6B00]">{acompte.toFixed(2).replace(".", ",")} €</strong></p>
+              <p>Solde restant : <strong>{(totalLocation - acompte).toFixed(2).replace(".", ",")} €</strong></p>
+            </div>
+            <p className="mt-3 text-sm text-gray-600">
+              Le montant affiché est calculé selon le prix journalier du jeu et les dates choisies.
+            </p>
+          </section>
+        )}
 
         {/* =================================================
             IDENTITÉ
