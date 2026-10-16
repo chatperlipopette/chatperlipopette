@@ -267,6 +267,7 @@ export default async function ReservationPage({
                 jeu={String(
                   game.nom ?? ""
                 )}
+                prixLocation={Number(game.prix_location ?? 0)}
               />
             )}
 
