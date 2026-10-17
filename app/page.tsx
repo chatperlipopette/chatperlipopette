@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import FeaturedGames from "./FeaturedGames";
 
+export const dynamic = "force-dynamic";
+
 const categories = [
   { emoji: "🤝", title: "Jeux coopératifs", description: "Unissez vos forces pour gagner ensemble." },
   { emoji: "😂", title: "Jeux d’ambiance", description: "Des fous rires et des parties animées." },
