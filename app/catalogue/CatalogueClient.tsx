@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 type Game = {
@@ -62,17 +62,48 @@ function categoryLabel(value: string): string {
 
 function GameCover({ game }: { game: Game }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [lookupStarted, setLookupStarted] = useState(false);
+  const imageUrl = imageFailed ? fallbackUrl : (game.image_url || fallbackUrl);
+
+  useEffect(() => {
+    if (lookupStarted || (game.image_url && !imageFailed)) return;
+
+    let cancelled = false;
+    setLookupStarted(true);
+
+    fetch(`/api/game-cover?name=${encodeURIComponent(game.nom)}`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!cancelled && typeof data?.imageUrl === "string" && data.imageUrl.startsWith("https://")) {
+          setFallbackUrl(data.imageUrl);
+        }
+      })
+      .catch(() => {
+        // Une recherche externe indisponible ne doit pas bloquer le catalogue.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [game.image_url, game.nom, imageFailed, lookupStarted]);
 
   return (
     <div className="flex h-52 items-center justify-center bg-[#F8F3E7] p-3">
-      {game.image_url && !imageFailed ? (
+      {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={game.image_url}
+          src={imageUrl}
           alt={`Boîte du jeu ${game.nom}`}
           loading="lazy"
           className="h-full w-full object-contain"
-          onError={() => setImageFailed(true)}
+          onError={() => {
+            if (!imageFailed) {
+              setImageFailed(true);
+            } else {
+              setFallbackUrl(null);
+            }
+          }}
         />
       ) : (
         <div
