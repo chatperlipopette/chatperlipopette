@@ -131,6 +131,52 @@ function normalizeAvailability(value: string): string {
   return text;
 }
 
+/* CLASSEMENT AUTOMATIQUE DES JEUX
+   Les catégories déjà saisies dans Google Sheets restent prioritaires.
+   Pour les jeux sans catégorie, on utilise le nom, la description et les informations disponibles.
+*/
+function inferCategories(game: {
+  nom: string;
+  description: string;
+  age: number | null;
+  nombre_min: number | null;
+  nombre_max: number | null;
+}): string {
+  const text = `${game.nom} ${game.description}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, " ");
+
+  const categories: string[] = [];
+  const has = (pattern: RegExp) => pattern.test(text);
+
+  if (has(/cooperatif|cooperation|ensemble|entraide|pandemic|spirit island|the crew|hanabi|magic maze|flash point|sky team|forbidden island/)) categories.push("cooperatif");
+  if (has(/ambiance|party game|mime|bluff|fou rire|association d.idees|time.?s up|just one|dixit|codenames|loup garou|loups garous|imposteur|quiz|devinettes/)) categories.push("ambiance");
+  if (has(/enquete|enquête|detective|détective|crime|meurtre|mystere|mystère|investigation|unlock|exit le jeu|sherlock|chronicles of crime|suspects|cold case/)) categories.push("enquete");
+  if (has(/duel|a deux|à deux|2 joueurs|deux joueurs|patchwork|jaipur|7 wonders duel|7 wonders duel|hive|schotten totten|lost cities/)) categories.push("a deux");
+  if (has(/jeu de cartes|cartes|card game|deck.?building|deckbuilding|draft|uno|skyjo|scout|sea salt paper|exploding kittens|dobble|6 qui prend|love letter|the mind/)) categories.push("cartes");
+  if (has(/adresse|dexterite|dextérité|equilibre|équilibre|empiler|pichenette|pitchcar|ice cool|jenga|kapla|mikado|rhino hero/)) categories.push("adresse");
+  if (has(/strategie|stratégie|gestion|placement|developpement|développement|civilisation|terraforming mars|wingspan|7 wonders|azul|carcassonne|catan|catane|splendor|everdell|ark nova|dune imperium|brass|root|scythe/)) categories.push("strategie");
+  if (has(/enigme|énigme|logique|puzzle|casse.?tete|casse-tête|deduction|déduction|enigmes|mastermind|sudoku|tangram/)) categories.push("reflexion");
+
+  if (categories.length === 0) {
+    // À défaut d'indice thématique fiable, on utilise l'âge conseillé comme repère familial.
+    if (game.age !== null && game.age <= 10) categories.push("famille");
+    else categories.push("reflexion");
+  }
+
+  if (
+    categories.length === 1 &&
+    game.nombre_max !== null &&
+    game.nombre_max <= 2 &&
+    !categories.includes("a deux")
+  ) {
+    categories.push("a deux");
+  }
+
+  return categories.join(", ");
+}
+
 /* RÉCUPÉRATION DES JEUX */
 export async function getGames(): Promise<Game[]> {
   const response = await fetch(GOOGLE_SHEETS_URL, {
@@ -202,7 +248,15 @@ export async function getGames(): Promise<Game[]> {
       prix_location: parseNumber(get(prixLocationIndex)),
       prix_caution: parseNumber(get(prixCautionIndex)),
       description: get(descriptionIndex) || null,
-      categories: get(categoriesIndex),
+      categories:
+        get(categoriesIndex) ||
+        inferCategories({
+          nom,
+          description: get(descriptionIndex),
+          age: parseNumber(get(ageIndex)),
+          nombre_min: parseNumber(get(nombreMinIndex)),
+          nombre_max: parseNumber(get(nombreMaxIndex)),
+        }),
       image_url: get(imageUrlIndex) || undefined,
     });
   }
