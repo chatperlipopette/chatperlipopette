@@ -211,6 +211,9 @@ export default function CatalogueClient({ games }: Props) {
                   {groupedGames.map((game, index) => {
             const gameId = game.code_barre || game.nom || String(index);
             const available = ["dispo", "disponible", "oui"].includes(normalize(game.disponibilite));
+            const displayDescription =
+              game.description?.trim() ||
+              `Découvrez ${game.nom}, un jeu de société à partager selon vos envies. ${game.nombre_min !== null && game.nombre_max !== null ? `Il se joue de ${game.nombre_min} à ${game.nombre_max} joueurs. ` : ""}${game.age !== null ? `Accessible dès ${game.age} ans. ` : ""}${game.duree ? `Comptez environ ${game.duree}. ` : ""}À louer chez Chat’Perlipopette !`;
 
             return (
               <article
@@ -255,7 +258,7 @@ export default function CatalogueClient({ games }: Props) {
                     {game.duree && <p>⏱️ {game.duree}</p>}
                   </div>
 
-                  {game.description && <p className="mt-4 line-clamp-4 text-sm leading-6 text-gray-600">{game.description}</p>}
+                  <p className="mt-4 line-clamp-4 text-sm leading-6 text-gray-600">{displayDescription}</p>
 
                   <div className="mt-auto pt-5">
                     <div className="flex items-end justify-between gap-3 border-t border-gray-100 pt-4">
