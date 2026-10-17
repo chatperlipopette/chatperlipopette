@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import FeaturedGames from "./FeaturedGames";
 
 const categories = [
   { emoji: "🤝", title: "Jeux coopératifs", description: "Unissez vos forces pour gagner ensemble." },
@@ -95,6 +96,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <FeaturedGames />
 
       <section id="comment-ca-marche" className="bg-[#24211B] text-white">
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
