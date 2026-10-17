@@ -16,9 +16,16 @@ export type Game = {
   categories: string;
   annee?: number | null;
   image_url?: string;
+  nouveaute?: boolean;
+  coup_de_coeur?: boolean;
 };
 
 /* NETTOYAGE */
+function parseBoolean(value: unknown): boolean {
+  const text = clean(value).toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim();
+  return ["oui", "yes", "true", "1", "x", "oui!", "nouveau", "nouveaute", "coup de coeur", "favori"].includes(text);
+}
+
 function clean(value: unknown): string {
   if (value === null || value === undefined) return "";
 
@@ -268,6 +275,8 @@ export async function getGames(): Promise<Game[]> {
   const anneeIndex = findColumn(
     headers, "annee", "annee_de_sortie", "annee_publication", "date_sortie", "year", "publication_year"
   );
+  const nouveauteIndex = findColumn(headers, "nouveaute", "nouveau", "new", "nouveaux_jeux");
+  const coupDeCoeurIndex = findColumn(headers, "coup_de_coeur", "coup_de_coeur", "favori", "favoris", "coup_de_coeur_site");
 
   const games: Game[] = [];
 
@@ -319,6 +328,8 @@ export async function getGames(): Promise<Game[]> {
         }),
       annee: parseNumber(get(anneeIndex)),
       image_url: get(imageUrlIndex) || undefined,
+      nouveaute: parseBoolean(get(nouveauteIndex)),
+      coup_de_coeur: parseBoolean(get(coupDeCoeurIndex)),
     });
   }
 
