@@ -63,14 +63,13 @@ function categoryLabel(value: string): string {
 function GameCover({ game }: { game: Game }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
-  const [lookupStarted, setLookupStarted] = useState(false);
   const imageUrl = imageFailed ? fallbackUrl : (game.image_url || fallbackUrl);
 
   useEffect(() => {
-    if (lookupStarted || (game.image_url && !imageFailed)) return;
+    // Si la couverture BnF charge, on la garde. Sinon on lance la recherche de secours.
+    if (game.image_url && !imageFailed) return;
 
     let cancelled = false;
-    setLookupStarted(true);
 
     fetch(`/api/game-cover?name=${encodeURIComponent(game.nom)}`)
       .then((response) => response.ok ? response.json() : null)
@@ -80,13 +79,13 @@ function GameCover({ game }: { game: Game }) {
         }
       })
       .catch(() => {
-        // Une recherche externe indisponible ne doit pas bloquer le catalogue.
+        // La recherche externe peut échouer : le dé de remplacement reste visible.
       });
 
     return () => {
       cancelled = true;
     };
-  }, [game.image_url, game.nom, imageFailed, lookupStarted]);
+  }, [game.image_url, game.nom, imageFailed]);
 
   return (
     <div className="flex h-52 items-center justify-center bg-[#F8F3E7] p-3">
