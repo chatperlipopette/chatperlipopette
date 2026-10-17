@@ -60,6 +60,34 @@ function categoryLabel(value: string): string {
   return labels[normalize(value)] || value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function GameCover({ game }: { game: Game }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <div className="flex h-52 items-center justify-center bg-[#F8F3E7] p-3">
+      {game.image_url && !imageFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={game.image_url}
+          alt={`Boîte du jeu ${game.nom}`}
+          loading="lazy"
+          className="h-full w-full object-contain"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-2 text-center text-[#806000]"
+          role="img"
+          aria-label={`Couverture indisponible pour ${game.nom}`}
+        >
+          <span className="text-6xl" aria-hidden="true">🎲</span>
+          <span className="text-xs font-semibold">Photo indisponible</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function formatPrice(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "Non indiqué";
   return new Intl.NumberFormat("fr-FR", {
@@ -220,24 +248,7 @@ export default function CatalogueClient({ games }: Props) {
                 key={gameId}
                 className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#EADCB9] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
-                {game.image_url ? (
-                  <div className="flex h-52 items-center justify-center bg-[#F8F3E7] p-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={game.image_url}
-                      alt={`Boîte du jeu ${game.nom}`}
-                      loading="lazy"
-                      className="h-full w-full object-contain"
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-52 items-center justify-center bg-[#F8F3E7] text-6xl" aria-label="Image non disponible">
-                    🎲
-                  </div>
-                )}
+                <GameCover game={game} />
 
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-3 flex items-start justify-between gap-2">
