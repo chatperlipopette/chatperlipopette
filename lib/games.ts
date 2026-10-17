@@ -145,7 +145,7 @@ function inferCategories(game: {
   const text = `${game.nom} ${game.description}`
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, " ");
+    .replace(/[\u0300-\u036f]/g, " ");
 
   const categories: string[] = [];
   const has = (pattern: RegExp) => pattern.test(text);
