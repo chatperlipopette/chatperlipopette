@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { getGames } from "../lib/games";
+import { getGames, type Game } from "../lib/games";
 
 export default async function FeaturedGames() {
-  let games;
+  let games: Game[] = [];
   try {
     games = await getGames();
   } catch (error) {
@@ -19,12 +19,12 @@ export default async function FeaturedGames() {
 
   if (nouveautés.length === 0 && coupsDeCoeur.length === 0) return null;
 
-  const renderGames = (items: typeof games) => (
+  const renderGames = (items: Game[], badgeLabel: string) => (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((game) => (
         <article key={game.code_barre || game.nom} className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wide text-[#9A6B00]">
-            {game.coup_de_coeur ? "❤️ Coup de cœur" : "✨ Nouveauté"}
+            {badgeLabel}
           </p>
           <h3 className="mt-2 text-lg font-black">{game.nom}</h3>
           {game.categories && <p className="mt-2 text-sm text-[#806000]">{game.categories}</p>}
@@ -45,7 +45,7 @@ export default async function FeaturedGames() {
             <p className="font-extrabold uppercase tracking-widest text-[#9A6B00]">Tout juste arrivés</p>
             <h2 className="mt-2 text-3xl font-black">✨ Les nouveautés</h2>
           </div>
-          {renderGames(nouveautés)}
+          {renderGames(nouveautés, "✨ Nouveauté")}
           <div className="mt-5"><Link href="/catalogue" className="font-extrabold underline underline-offset-4">Voir toutes les nouveautés dans le catalogue →</Link></div>
         </div>
       )}
@@ -55,7 +55,7 @@ export default async function FeaturedGames() {
             <p className="font-extrabold uppercase tracking-widest text-[#9A6B00]">Nos recommandations</p>
             <h2 className="mt-2 text-3xl font-black">❤️ Nos coups de cœur</h2>
           </div>
-          {renderGames(coupsDeCoeur)}
+          {renderGames(coupsDeCoeur, "❤️ Coup de cœur")}
           <div className="mt-5"><Link href="/catalogue" className="font-extrabold underline underline-offset-4">Voir tous les coups de cœur dans le catalogue →</Link></div>
         </div>
       )}
