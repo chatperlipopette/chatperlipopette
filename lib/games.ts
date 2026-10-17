@@ -34,6 +34,65 @@ function clean(value: unknown): string {
     .trim();
 }
 
+/**
+ * Affiche les durées avec une unité explicite.
+ * Les nombres seuls du tableur sont interprétés comme des minutes.
+ * Les formats déjà explicites (1h30, 90 min, 2 heures...) sont reconnus.
+ */
+export function formatDuration(value: unknown): string {
+  const raw = clean(value);
+  if (!raw) return "";
+
+  const normalized = raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/\\s+/g, " ")
+    .trim();
+
+  const formatMinutes = (total: number): string => {
+    if (!Number.isFinite(total) || total < 0) return raw;
+    const minutes = Math.round(total);
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    if (hours === 0) return `${minutes} min`;
+    return remainder === 0 ? `${hours} h` : `${hours} h ${remainder} min`;
+  };
+
+  // Formats comme 1h30, 1 h 30 min, 2 heures ou 1.5 h.
+  const hourMatch = normalized.match(/^(\\d+(?:[.,]\\d+)?)\\s*(?:h|heure|heures|hr|hrs)(?:\\s*(\\d+)\\s*(?:m|min|minute|minutes)?)?$/);
+  if (hourMatch) {
+    const hours = Number(hourMatch[1].replace(",", "."));
+    const minutes = Number(hourMatch[2] || 0);
+    return formatMinutes(hours * 60 + minutes);
+  }
+
+  // Formats comme 45 min, 90 minutes.
+  const minuteMatch = normalized.match(/^(\\d+)\\s*(?:m|min|minute|minutes)$/);
+  if (minuteMatch) return formatMinutes(Number(minuteMatch[1]));
+
+  // Un nombre seul dans la colonne Durée est considéré comme un nombre de minutes.
+  if (/^\\d+(?:[.,]\\d+)?$/.test(normalized)) {
+    return formatMinutes(Number(normalized.replace(",", ".")));
+  }
+
+  // Pour les plages ou formulations plus complexes, conserver le texte déjà saisi
+  // s'il précise son unité, plutôt que de risquer une conversion incorrecte.
+  if (/(?:\\bmin(?:ute)?s?\\b|\\bh(?:eure)?s?\\b|\\bheures?\\b)/.test(normalized)) {
+    return raw
+      .replace(/\\bminutes?\\b/gi, "min")
+      .replace(/\\bheures?\\b/gi, "h");
+  }
+
+  // Exemples de formats reconnus en plus : 1:30 signifie 1 h 30.
+  const colonMatch = normalized.match(/^(\\d{1,2}):(\\d{1,2})$/);
+  if (colonMatch && Number(colonMatch[2]) < 60) {
+    return formatMinutes(Number(colonMatch[1]) * 60 + Number(colonMatch[2]));
+  }
+
+  return raw;
+}
+
 /* NOMBRE */
 function parseNumber(value: unknown): number | null {
   const text = clean(value)
@@ -218,7 +277,7 @@ function makeShortDescription(game: {
   }
 
   if (game.age !== null) details.push(`dès ${game.age} ans`);
-  if (game.duree.trim()) details.push(`environ ${game.duree}`);
+  if (game.duree.trim()) details.push(`environ ${formatDuration(game.duree)}`);
 
   const practicalInfo = details.length ? ` Il se joue ${details.join(", ")}.` : "";
   return `Découvrez ${game.nom} : un jeu de ${theme}.${practicalInfo} Retrouvez-le à la location chez Chat’Perlipopette !`;
