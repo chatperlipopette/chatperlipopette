@@ -46,8 +46,8 @@ export function formatDuration(value: unknown): string {
   const normalized = raw
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
-    .replace(/\\s+/g, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 
   const formatMinutes = (total: number): string => {
@@ -60,7 +60,7 @@ export function formatDuration(value: unknown): string {
   };
 
   // Formats comme 1h30, 1 h 30 min, 2 heures ou 1.5 h.
-  const hourMatch = normalized.match(/^(\\d+(?:[.,]\\d+)?)\\s*(?:h|heure|heures|hr|hrs)(?:\\s*(\\d+)\\s*(?:m|min|minute|minutes)?)?$/);
+  const hourMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|heure|heures|hr|hrs)(?:\s*(\d+)\s*(?:m|min|minute|minutes)?)?$/);
   if (hourMatch) {
     const hours = Number(hourMatch[1].replace(",", "."));
     const minutes = Number(hourMatch[2] || 0);
@@ -68,24 +68,24 @@ export function formatDuration(value: unknown): string {
   }
 
   // Formats comme 45 min, 90 minutes.
-  const minuteMatch = normalized.match(/^(\\d+)\\s*(?:m|min|minute|minutes)$/);
+  const minuteMatch = normalized.match(/^(\d+)\s*(?:m|min|minute|minutes)$/);
   if (minuteMatch) return formatMinutes(Number(minuteMatch[1]));
 
   // Un nombre seul dans la colonne Durée est considéré comme un nombre de minutes.
-  if (/^\\d+(?:[.,]\\d+)?$/.test(normalized)) {
+  if (/^\d+(?:[.,]\d+)?$/.test(normalized)) {
     return formatMinutes(Number(normalized.replace(",", ".")));
   }
 
   // Pour les plages ou formulations plus complexes, conserver le texte déjà saisi
   // s'il précise son unité, plutôt que de risquer une conversion incorrecte.
-  if (/(?:\\bmin(?:ute)?s?\\b|\\bh(?:eure)?s?\\b|\\bheures?\\b)/.test(normalized)) {
+  if (/(?:\bmin(?:ute)?s?\b|\bh(?:eure)?s?\b|\bheures?\b)/.test(normalized)) {
     return raw
-      .replace(/\\bminutes?\\b/gi, "min")
-      .replace(/\\bheures?\\b/gi, "h");
+      .replace(/\bminutes?\b/gi, "min")
+      .replace(/\bheures?\b/gi, "h");
   }
 
   // Exemples de formats reconnus en plus : 1:30 signifie 1 h 30.
-  const colonMatch = normalized.match(/^(\\d{1,2}):(\\d{1,2})$/);
+  const colonMatch = normalized.match(/^(\d{1,2}):(\d{1,2})$/);
   if (colonMatch && Number(colonMatch[2]) < 60) {
     return formatMinutes(Number(colonMatch[1]) * 60 + Number(colonMatch[2]));
   }
