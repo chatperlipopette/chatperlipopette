@@ -44,6 +44,22 @@ function normalize(value: string | null | undefined): string {
     .trim();
 }
 
+function categoryLabel(value: string): string {
+  const labels: Record<string, string> = {
+    cooperatif: "🤝 Coopératif",
+    ambiance: "😂 Ambiance",
+    strategie: "🧠 Stratégie",
+    enquete: "🔎 Enquête",
+    famille: "👨‍👩‍👧 Famille",
+    "a deux": "💑 À deux",
+    cartes: "🃏 Cartes",
+    adresse: "🎯 Adresse",
+    reflexion: "🧩 Réflexion",
+    autres: "🎲 Autres jeux",
+  };
+  return labels[normalize(value)] || value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function formatPrice(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "Non indiqué";
   return new Intl.NumberFormat("fr-FR", {
@@ -161,8 +177,22 @@ export default function CatalogueClient({ games }: Props) {
           </button>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredGames.map((game, index) => {
+        <div className="space-y-10">
+          {Array.from(
+            new Set(
+              filteredGames.flatMap((game) =>
+                (game.categories || "autres").split(",").map((item) => item.trim()).filter(Boolean)
+              )
+            )
+          ).map((group) => {
+            const groupedGames = filteredGames.filter((game) =>
+              (game.categories || "autres").split(",").map((item) => item.trim()).includes(group)
+            );
+            return (
+              <section key={group}>
+                <h2 className="mb-4 text-2xl font-black text-gray-900">{categoryLabel(group)} <span className="text-base font-semibold text-gray-500">({groupedGames.length})</span></h2>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {groupedGames.map((game, index) => {
             const gameId = game.code_barre || game.nom || String(index);
             const available = ["dispo", "disponible", "oui"].includes(normalize(game.disponibilite));
 
@@ -231,6 +261,10 @@ export default function CatalogueClient({ games }: Props) {
                   </div>
                 </div>
               </article>
+            );
+                  })}
+                </div>
+              </section>
             );
           })}
         </div>
