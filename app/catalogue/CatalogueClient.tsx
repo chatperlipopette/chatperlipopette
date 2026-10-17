@@ -18,6 +18,8 @@ type Game = {
   categories?: string | null;
   annee?: number | null;
   image_url?: string;
+  nouveaute?: boolean;
+  coup_de_coeur?: boolean;
 };
 
 type Props = {
@@ -132,6 +134,7 @@ export default function CatalogueClient({ games }: Props) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("tous");
   const [availability, setAvailability] = useState("tous");
+  const [specialFilter, setSpecialFilter] = useState("tous");
 
   const filteredGames = useMemo(() => {
     const searchTerms = normalize(search).split(" ").filter(Boolean);
@@ -172,9 +175,14 @@ export default function CatalogueClient({ games }: Props) {
         (availability === "disponibles" && isAvailable) ||
         (availability === "indisponibles" && !isAvailable);
 
-      return matchesSearch && matchesCategory && matchesAvailability;
+      const matchesSpecial =
+        specialFilter === "tous" ||
+        (specialFilter === "nouveautes" && game.nouveaute === true) ||
+        (specialFilter === "coups-de-coeur" && game.coup_de_coeur === true);
+
+      return matchesSearch && matchesCategory && matchesAvailability && matchesSpecial;
     });
-  }, [games, search, category, availability]);
+  }, [games, search, category, availability, specialFilter]);
 
   return (
     <section>
@@ -190,6 +198,22 @@ export default function CatalogueClient({ games }: Props) {
           placeholder="Nom du jeu, éditeur, mot-clé…"
           className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base outline-none transition focus:border-[#D6A014] focus:ring-2 focus:ring-[#E8B223]/30"
         />
+
+        <div className="mt-5">
+          <p className="mb-3 text-sm font-bold text-gray-700">À découvrir</p>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "tous", label: "🎲 Tous les jeux" },
+              { value: "nouveautes", label: "✨ Nouveautés" },
+              { value: "coups-de-coeur", label: "❤️ Coups de cœur" },
+            ].map((item) => (
+              <button key={item.value} type="button" onClick={() => setSpecialFilter(item.value)}
+                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${specialFilter === item.value ? "border-[#24211B] bg-[#24211B] text-white" : "border-gray-300 bg-white text-gray-800 hover:border-[#E8B223]"}`}>
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-5">
           <p className="mb-3 text-sm font-bold text-gray-700">Filtrer par catégorie</p>
@@ -245,6 +269,7 @@ export default function CatalogueClient({ games }: Props) {
               setSearch("");
               setCategory("tous");
               setAvailability("tous");
+              setSpecialFilter("tous");
             }}
             className="mt-5 rounded-xl bg-[#E8B223] px-5 py-3 font-bold text-black hover:bg-[#D6A014]"
           >
@@ -265,7 +290,7 @@ export default function CatalogueClient({ games }: Props) {
               .sort((a, b) => {
                 const yearA = a.annee && a.annee > 0 ? a.annee : Number.MAX_SAFE_INTEGER;
                 const yearB = b.annee && b.annee > 0 ? b.annee : Number.MAX_SAFE_INTEGER;
-                return yearA - yearB || a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" });
+                return a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" });
               });
             return (
               <section key={group}>
@@ -287,7 +312,11 @@ export default function CatalogueClient({ games }: Props) {
 
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-3 flex items-start justify-between gap-2">
-                    <h2 className="text-xl font-black leading-tight text-gray-900">{game.nom}</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-black leading-tight text-gray-900">{game.nom}</h2>
+                      {game.nouveaute && <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-extrabold text-blue-800">✨ Nouveauté</span>}
+                      {game.coup_de_coeur && <span className="rounded-full bg-pink-100 px-2 py-1 text-xs font-extrabold text-pink-800">❤️ Coup de cœur</span>}
+                    </div>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${available ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                       {available ? "Disponible" : "Indisponible"}
                     </span>
