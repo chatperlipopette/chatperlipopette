@@ -75,23 +75,39 @@ export default function CatalogueClient({ games }: Props) {
   const [availability, setAvailability] = useState("tous");
 
   const filteredGames = useMemo(() => {
-    const normalizedSearch = normalize(search);
+    const searchTerms = normalize(search).split(" ").filter(Boolean);
 
     return games.filter((game) => {
       const searchable = normalize(
-        [game.nom, game.editeur, game.description, game.categories].filter(Boolean).join(" ")
+        [
+          game.nom,
+          game.code_barre,
+          game.editeur,
+          game.description,
+          game.categories,
+          game.duree,
+          game.age === null ? "" : String(game.age),
+          game.nombre_min === null ? "" : String(game.nombre_min),
+          game.nombre_max === null ? "" : String(game.nombre_max),
+        ].filter(Boolean).join(" ")
       );
 
-      const matchesSearch = !normalizedSearch || searchable.includes(normalizedSearch);
-      const normalizedCategories = normalize(game.categories);
+      // Toutes les parties de la recherche doivent être présentes, quel que soit leur ordre.
+      const matchesSearch = searchTerms.every((term) => searchable.includes(term));
+
+      const gameCategories = (game.categories || "")
+        .split(",")
+        .map((item) => normalize(item))
+        .filter(Boolean);
       const matchesCategory =
-        category === "tous" ||
-        normalizedCategories.includes(normalize(category));
+        category === "tous" || gameCategories.includes(normalize(category));
+
       const normalizedAvailability = normalize(game.disponibilite);
       const isAvailable =
         normalizedAvailability === "dispo" ||
         normalizedAvailability === "disponible" ||
         normalizedAvailability === "oui";
+
       const matchesAvailability =
         availability === "tous" ||
         (availability === "disponibles" && isAvailable) ||
