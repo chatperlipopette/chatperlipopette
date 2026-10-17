@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { formatDuration } from "../../lib/games";
 
 type Game = {
   code_barre: string;
@@ -301,7 +302,7 @@ export default function CatalogueClient({ games }: Props) {
             const available = ["dispo", "disponible", "oui"].includes(normalize(game.disponibilite));
             const displayDescription =
               game.description?.trim() ||
-              `Découvrez ${game.nom}, un jeu de société à partager selon vos envies. ${game.nombre_min !== null && game.nombre_max !== null ? `Il se joue de ${game.nombre_min} à ${game.nombre_max} joueurs. ` : ""}${game.age !== null ? `Accessible dès ${game.age} ans. ` : ""}${game.duree ? `Comptez environ ${game.duree}. ` : ""}À louer chez Chat’Perlipopette !`;
+              `Découvrez ${game.nom}, un jeu de société à partager selon vos envies. ${game.nombre_min !== null && game.nombre_max !== null ? `Il se joue de ${game.nombre_min} à ${game.nombre_max} joueurs. ` : ""}${game.age !== null ? `Accessible dès ${game.age} ans. ` : ""}${game.duree ? `Comptez environ ${formatDuration(game.duree)}. ` : ""}À louer chez Chat’Perlipopette !`;
 
             return (
               <article
@@ -331,7 +332,7 @@ export default function CatalogueClient({ games }: Props) {
                       <p>👥 {game.nombre_min ?? "?"}–{game.nombre_max ?? "?"} joueurs</p>
                     )}
                     {game.age !== null && <p>🎂 Dès {game.age} ans</p>}
-                    {game.duree && <p>⏱️ {game.duree}</p>}
+                    {game.duree && <p>⏱️ {formatDuration(game.duree)}</p>}
                   </div>
 
                   <p className="mt-4 line-clamp-4 text-sm leading-6 text-gray-600">{displayDescription}</p>
