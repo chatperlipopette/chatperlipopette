@@ -22,7 +22,7 @@ export type Game = {
 
 /* NETTOYAGE */
 function parseBoolean(value: unknown): boolean {
-  const text = clean(value).toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").trim();
+  const text = clean(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   return ["oui", "yes", "true", "1", "x", "oui!", "nouveau", "nouveaute", "coup de coeur", "favori"].includes(text);
 }
 
