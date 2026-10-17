@@ -1,4 +1,4 @@
-import { getGames } from "../../../lib/games";
+import { getGames, formatDuration } from "../../../lib/games";
 import Link from "next/link";
 
 type Props = {
@@ -144,7 +144,7 @@ export default async function GamePage({
     (jeu as any).duree !== null &&
     (jeu as any).duree !== undefined &&
     String((jeu as any).duree).trim() !== ""
-      ? String((jeu as any).duree)
+      ? formatDuration((jeu as any).duree)
       : "Non renseignée";
 
   /* =====================================================
