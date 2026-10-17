@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 export default function AdminCatalogueLoginPage() {
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ export default function AdminCatalogueLoginPage() {
       setLoading(false);
       return;
     }
-    const supabase = createClient(url, key);
+    const supabase = createBrowserClient(url, key);
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback?next=/admin/catalogue` },
