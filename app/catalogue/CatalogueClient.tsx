@@ -16,6 +16,7 @@ type Game = {
   prix_caution: number | null;
   description: string | null;
   categories?: string | null;
+  annee?: number | null;
   image_url?: string;
 };
 
@@ -259,9 +260,13 @@ export default function CatalogueClient({ games }: Props) {
               )
             )
           ).map((group) => {
-            const groupedGames = filteredGames.filter((game) =>
-              (game.categories || "autres").split(",").map((item) => item.trim()).includes(group)
-            );
+            const groupedGames = filteredGames
+              .filter((game) => (game.categories || "autres").split(",").map((item) => item.trim()).includes(group))
+              .sort((a, b) => {
+                const yearA = a.annee && a.annee > 0 ? a.annee : Number.MAX_SAFE_INTEGER;
+                const yearB = b.annee && b.annee > 0 ? b.annee : Number.MAX_SAFE_INTEGER;
+                return yearA - yearB || a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" });
+              });
             return (
               <section key={group}>
                 <h2 className="mb-4 text-2xl font-black text-gray-900">{categoryLabel(group)} <span className="text-base font-semibold text-gray-500">({groupedGames.length})</span></h2>
@@ -289,6 +294,7 @@ export default function CatalogueClient({ games }: Props) {
                   </div>
 
                   {game.editeur && <p className="text-sm text-gray-500">Éditeur : {game.editeur}</p>}
+                  {game.annee && <p className="text-sm text-gray-500">Année de sortie : {game.annee}</p>}
                   {game.categories && <p className="mt-2 text-sm font-semibold text-[#806000]">{game.categories}</p>}
 
                   <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-700">
