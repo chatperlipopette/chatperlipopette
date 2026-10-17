@@ -177,6 +177,45 @@ function inferCategories(game: {
   return categories.join(", ");
 }
 
+/* COURTE PRÉSENTATION DE SECOURS POUR LES JEUX SANS DESCRIPTION */
+function makeShortDescription(game: {
+  nom: string;
+  categories: string;
+  nombre_min: number | null;
+  nombre_max: number | null;
+  duree: string;
+  age: number | null;
+}): string {
+  const categoryNames: Record<string, string> = {
+    cooperatif: "coopération, où les joueurs avancent ensemble",
+    ambiance: "ambiance, idéal pour partager un moment convivial",
+    strategie: "stratégie, pour planifier ses actions et faire les bons choix",
+    enquete: "enquête, pour observer les indices et résoudre des mystères",
+    famille: "familial, pour réunir petits et grands autour de la table",
+    "a deux": "duel, parfait pour un face-à-face à deux",
+    cartes: "cartes, pour des parties rythmées et faciles à sortir",
+    adresse: "adresse, pour tester sa précision et son habileté",
+    reflexion: "réflexion, pour faire travailler sa logique",
+  };
+  const firstCategory = (game.categories || "").split(",")[0].trim().toLowerCase();
+  const theme = categoryNames[firstCategory] || "jeu de société, pour partager un bon moment autour de la table";
+  const details: string[] = [];
+
+  if (game.nombre_min !== null && game.nombre_max !== null) {
+    details.push(`de ${game.nombre_min} à ${game.nombre_max} joueurs`);
+  } else if (game.nombre_min !== null) {
+    details.push(`à partir de ${game.nombre_min} joueurs`);
+  } else if (game.nombre_max !== null) {
+    details.push(`jusqu'à ${game.nombre_max} joueurs`);
+  }
+
+  if (game.age !== null) details.push(`dès ${game.age} ans`);
+  if (game.duree.trim()) details.push(`environ ${game.duree}`);
+
+  const practicalInfo = details.length ? ` Il se joue ${details.join(", ")}.` : "";
+  return `Découvrez ${game.nom} : un jeu de ${theme}.${practicalInfo} Retrouvez-le à la location chez Chat’Perlipopette !`;
+}
+
 /* RÉCUPÉRATION DES JEUX */
 export async function getGames(): Promise<Game[]> {
   const response = await fetch(GOOGLE_SHEETS_URL, {
@@ -247,7 +286,24 @@ export async function getGames(): Promise<Game[]> {
       disponibilite: normalizeAvailability(get(disponibiliteIndex)),
       prix_location: parseNumber(get(prixLocationIndex)),
       prix_caution: parseNumber(get(prixCautionIndex)),
-      description: get(descriptionIndex) || null,
+      description:
+        get(descriptionIndex) ||
+        makeShortDescription({
+          nom,
+          categories:
+            get(categoriesIndex) ||
+            inferCategories({
+              nom,
+              description: get(descriptionIndex),
+              age: parseNumber(get(ageIndex)),
+              nombre_min: parseNumber(get(nombreMinIndex)),
+              nombre_max: parseNumber(get(nombreMaxIndex)),
+            }),
+          nombre_min: parseNumber(get(nombreMinIndex)),
+          nombre_max: parseNumber(get(nombreMaxIndex)),
+          duree: get(dureeIndex),
+          age: parseNumber(get(ageIndex)),
+        }),
       categories:
         get(categoriesIndex) ||
         inferCategories({
