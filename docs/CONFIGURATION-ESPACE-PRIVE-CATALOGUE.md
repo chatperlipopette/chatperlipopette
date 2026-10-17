@@ -35,6 +35,6 @@ Active les variables pour Production (et Preview si tu souhaites tester), puis r
 1. Ouvre `/admin/catalogue/connexion` sur le domaine du site.
 2. Connecte-toi avec le compte Google configuré dans `ADMIN_EMAIL`.
 3. Coche les nouveautés et coups de cœur puis clique sur **Enregistrer**.
-4. Ouvre `/catalogue) dans une fenêtre privée pour vérifier les badges visibles publiquement.
+4. Ouvre `/catalogue` dans une fenêtre privée pour vérifier les badges visibles publiquement.
 
 Si Supabase n’est pas configuré, le catalogue existant reste utilisable sans les nouveaux badges de base de données ; l’espace privé affiche un message de configuration.
