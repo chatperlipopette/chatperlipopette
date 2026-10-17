@@ -14,6 +14,7 @@ export type Game = {
   prix_caution: number | null;
   description: string | null;
   categories: string;
+  annee?: number | null;
   image_url?: string;
 };
 
@@ -264,6 +265,9 @@ export async function getGames(): Promise<Game[]> {
   const imageUrlIndex = findColumn(
     headers, "image_url", "image", "url_image"
   );
+  const anneeIndex = findColumn(
+    headers, "annee", "annee_de_sortie", "annee_publication", "date_sortie", "year", "publication_year"
+  );
 
   const games: Game[] = [];
 
@@ -313,6 +317,7 @@ export async function getGames(): Promise<Game[]> {
           nombre_min: parseNumber(get(nombreMinIndex)),
           nombre_max: parseNumber(get(nombreMaxIndex)),
         }),
+      annee: parseNumber(get(anneeIndex)),
       image_url: get(imageUrlIndex) || undefined,
     });
   }
