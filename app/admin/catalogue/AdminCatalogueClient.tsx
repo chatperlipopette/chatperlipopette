@@ -102,7 +102,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
           <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] gap-2 border-b bg-[#F8F3E7] p-3 text-sm font-black sm:p-4">
             <span>Jeu</span><span className="text-center">✨ Nouveauté</span><span className="text-center">❤️ Coup de cœur</span>
           </div>
-          {loading ? <p className="p-6">Chargement des réglages…</p> : filtered.map((game) => {
+          {loading ? <p className="p-6">Chargement des réglages…</p> : filtered.length === 0 ? <p className="p-6 text-gray-600">Aucun jeu ne correspond à « {search} ».</p> : filtered.map((game) => {
             const key = game.code_barre || game.nom;
             const value = flags[key] ?? { nouveaute: game.nouveaute, coup_de_coeur: game.coup_de_coeur };
             return (
