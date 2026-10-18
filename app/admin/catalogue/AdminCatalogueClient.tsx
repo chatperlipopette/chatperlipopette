@@ -33,7 +33,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
 
   const normalize = (value: unknown) => String(value ?? "")
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("fr")
     .trim();
   const query = normalize(search);
