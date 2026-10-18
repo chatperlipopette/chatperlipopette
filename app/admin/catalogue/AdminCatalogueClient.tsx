@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Game = { code_barre: string; nom: string; nouveaute: boolean; coup_de_coeur: boolean };
 type Flag = { game_code: string; nouveaute: boolean; coup_de_coeur: boolean };
@@ -31,16 +31,15 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
     return () => { active = false; };
   }, []);
 
-  const filtered = useMemo(() => {
-    const normalize = (value: unknown) => String(value ?? "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("fr")
-      .trim();
-    const q = normalize(search);
-    if (!q) return games;
-    return games.filter((game) => normalize(game.nom).includes(q) || normalize(game.code_barre).includes(q));
-  }, [games, search]);
+  const normalize = (value: unknown) => String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .toLocaleLowerCase("fr")
+    .trim();
+  const query = normalize(search);
+  const visibleGames = query
+    ? games.filter((game) => normalize(game.nom).includes(query) || normalize(game.code_barre).includes(query))
+    : games;
 
   function toggle(code: string, field: "nouveaute" | "coup_de_coeur", value: boolean, original: Game) {
     setFlags((current) => ({
@@ -93,7 +92,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
         <div className="mb-5 rounded-2xl border border-[#EADCB9] bg-white p-4 md:p-6">
           <label htmlFor="search-games" className="mb-2 block font-bold">Rechercher un jeu</label>
           <input id="search-games" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom ou code-barres…" className="w-full rounded-xl border border-gray-300 px-4 py-3" />
-          <p className="mt-3 text-sm text-gray-600">{filtered.length} jeux affichés sur {games.length}</p>
+          <p className="mt-3 text-sm text-gray-600">{visibleGames.length} jeux affichés sur {games.length}</p>
         </div>
 
         {message && <p role="status" className="mb-5 rounded-xl border border-[#EADCB9] bg-white p-4 font-semibold">{message}</p>}
@@ -102,7 +101,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
           <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] gap-2 border-b bg-[#F8F3E7] p-3 text-sm font-black sm:p-4">
             <span>Jeu</span><span className="text-center">✨ Nouveauté</span><span className="text-center">❤️ Coup de cœur</span>
           </div>
-          {loading ? <p className="p-6">Chargement des réglages…</p> : filtered.length === 0 ? <p className="p-6 text-gray-600">Aucun jeu ne correspond à « {search} ».</p> : filtered.map((game) => {
+          {loading ? <p className="p-6">Chargement des réglages…</p> : visibleGames.length === 0 ? <p className="p-6 text-gray-600">Aucun jeu ne correspond à « {search} ».</p> : visibleGames.map((game) => {
             const key = game.code_barre || game.nom;
             const value = flags[key] ?? { nouveaute: game.nouveaute, coup_de_coeur: game.coup_de_coeur };
             return (
