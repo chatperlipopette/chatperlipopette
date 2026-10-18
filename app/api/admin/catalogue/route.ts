@@ -120,6 +120,9 @@ export async function PATCH(request: NextRequest) {
     if (!response.ok) {
       const details = await response.text();
       console.error("Erreur de sauvegarde Supabase :", response.status, details);
+      let parsed: { message?: string; details?: string; hint?: string; code?: string } = {};
+      try { parsed = JSON.parse(details); } catch {}
+      const diagnostic = [parsed.message, parsed.details, parsed.hint, parsed.code].filter(Boolean).join(" — ");
       let errorMessage = "La sauvegarde a échoué (erreur de base de données).";
       if (details.includes("on_conflict") || details.includes("unique constraint") || details.includes("no unique")) {
         errorMessage = "La table catalogue_game_flags doit avoir une contrainte UNIQUE sur la colonne game_code dans Supabase.";
@@ -127,6 +130,8 @@ export async function PATCH(request: NextRequest) {
         errorMessage = "Les colonnes de la table catalogue_game_flags ne correspondent pas. Vérifie game_code, nouveaute et coup_de_coeur dans Supabase.";
       } else if (response.status === 401 || response.status === 403) {
         errorMessage = "Supabase refuse l’écriture. Vérifie la clé SUPABASE_SERVICE_ROLE_KEY dans Vercel.";
+      } else if (diagnostic) {
+        errorMessage = `Supabase (${response.status}) : ${diagnostic.slice(0, 500)}`;
       }
       return NextResponse.json({ error: errorMessage }, { status: 502 });
     }
