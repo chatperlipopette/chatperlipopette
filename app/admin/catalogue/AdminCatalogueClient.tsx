@@ -97,7 +97,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
 
         {message && <p role="status" className="mb-5 rounded-xl border border-[#EADCB9] bg-white p-4 font-semibold">{message}</p>}
 
-        <div className="overflow-hidden rounded-2xl border border-[#EADCB9] bg-white shadow-sm">
+        <div key={query} className="overflow-hidden rounded-2xl border border-[#EADCB9] bg-white shadow-sm">
           <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] gap-2 border-b bg-[#F8F3E7] p-3 text-sm font-black sm:p-4">
             <span>Jeu</span><span className="text-center">✨ Nouveauté</span><span className="text-center">❤️ Coup de cœur</span>
           </div>
