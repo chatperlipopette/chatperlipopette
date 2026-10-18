@@ -102,6 +102,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ ok: true, count: 0 });
     }
 
+    // Un même code-barres peut apparaître plusieurs fois dans le catalogue.
+    // Supabase refuse un upsert si le même game_code apparaît plusieurs fois dans une requête.
+    const uniqueItems = Array.from(
+      new Map(cleanItems.map((item) => [item.game_code, item])).values()
+    );
+
     const response = await fetch(
       `${config.url}/rest/v1/catalogue_game_flags?on_conflict=game_code`,
       {
@@ -112,7 +118,7 @@ export async function PATCH(request: NextRequest) {
           "Content-Type": "application/json",
           Prefer: "resolution=merge-duplicates,return=representation",
         },
-        body: JSON.stringify(cleanItems),
+        body: JSON.stringify(uniqueItems),
         cache: "no-store",
       }
     );
@@ -136,7 +142,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: errorMessage }, { status: 502 });
     }
 
-    return NextResponse.json({ ok: true, count: cleanItems.length });
+    return NextResponse.json({ ok: true, count: uniqueItems.length });
   } catch (error) {
     console.error("Erreur de sauvegarde du catalogue :", error);
     return NextResponse.json({ error: "Base de données inaccessible." }, { status: 503 });
