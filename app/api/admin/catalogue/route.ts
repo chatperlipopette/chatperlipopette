@@ -118,8 +118,17 @@ export async function PATCH(request: NextRequest) {
     );
 
     if (!response.ok) {
-      console.error("Erreur de sauvegarde Supabase :", response.status, await response.text());
-      return NextResponse.json({ error: "La sauvegarde a échoué." }, { status: 502 });
+      const details = await response.text();
+      console.error("Erreur de sauvegarde Supabase :", response.status, details);
+      let errorMessage = "La sauvegarde a échoué (erreur de base de données).";
+      if (details.includes("on_conflict") || details.includes("unique constraint") || details.includes("no unique")) {
+        errorMessage = "La table catalogue_game_flags doit avoir une contrainte UNIQUE sur la colonne game_code dans Supabase.";
+      } else if (details.includes("column") && details.includes("does not exist")) {
+        errorMessage = "Les colonnes de la table catalogue_game_flags ne correspondent pas. Vérifie game_code, nouveaute et coup_de_coeur dans Supabase.";
+      } else if (response.status === 401 || response.status === 403) {
+        errorMessage = "Supabase refuse l’écriture. Vérifie la clé SUPABASE_SERVICE_ROLE_KEY dans Vercel.";
+      }
+      return NextResponse.json({ error: errorMessage }, { status: 502 });
     }
 
     return NextResponse.json({ ok: true, count: cleanItems.length });
