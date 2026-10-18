@@ -32,8 +32,14 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
   }, []);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLocaleLowerCase("fr");
-    return games.filter((game) => game.nom.toLocaleLowerCase("fr").includes(q) || game.code_barre.includes(q));
+    const normalize = (value: unknown) => String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLocaleLowerCase("fr")
+      .trim();
+    const q = normalize(search);
+    if (!q) return games;
+    return games.filter((game) => normalize(game.nom).includes(q) || normalize(game.code_barre).includes(q));
   }, [games, search]);
 
   function toggle(code: string, field: "nouveaute" | "coup_de_coeur", value: boolean, original: Game) {
