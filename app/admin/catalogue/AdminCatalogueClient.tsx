@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 
 type Game = { code_barre: string; nom: string; nouveaute: boolean; coup_de_coeur: boolean };
 type Flag = { game_code: string; nouveaute: boolean; coup_de_coeur: boolean };
+type AvailabilityBlock = { game_code: string; blocked_manually: boolean; block_reason: string | null };
+type Reservation = { game_code: string; date_debut: string; date_retour: string; status: string };
 
 export default function AdminCatalogueClient({ games, email }: { games: Game[]; email: string }) {
   const [search, setSearch] = useState("");
@@ -11,6 +13,10 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [blocks, setBlocks] = useState<Record<string, AvailabilityBlock>>({});
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [blockReasonDraft, setBlockReasonDraft] = useState<Record<string, string>>({});
+  const [availabilitySaving, setAvailabilitySaving] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -30,6 +36,43 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/disponibilite", { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Disponibilités indisponibles.");
+        if (!active) return;
+        const nextBlocks: Record<string, AvailabilityBlock> = {};
+        (result.blocks as AvailabilityBlock[]).forEach((item) => { nextBlocks[item.game_code] = item; });
+        setBlocks(nextBlocks);
+        setReservations((result.reservations as Reservation[]) || []);
+      })
+      .catch((error) => { if (active) setMessage(error.message); });
+    return () => { active = false; };
+  }, []);
+
+  async function saveAvailability(game: Game, blocked: boolean) {
+    const key = game.code_barre || game.nom;
+    setAvailabilitySaving(key);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/disponibilite", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ game_code: key, blocked_manually: blocked, block_reason: blockReasonDraft[key] || "" }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Impossible d'enregistrer la disponibilité.");
+      setBlocks((current) => ({ ...current, [key]: { game_code: key, blocked_manually: blocked, block_reason: blockReasonDraft[key] || null } }));
+      setMessage(blocked ? `${game.nom} est bloqué manuellement.` : `Blocage manuel retiré pour ${game.nom}.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Sauvegarde impossible.");
+    } finally {
+      setAvailabilitySaving(null);
+    }
+  }
 
   const normalize = (value: unknown) => String(value ?? "")
     .normalize("NFD")
@@ -98,17 +141,35 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
         {message && <p role="status" className="mb-5 rounded-xl border border-[#EADCB9] bg-white p-4 font-semibold">{message}</p>}
 
         <div key={query} className="overflow-hidden rounded-2xl border border-[#EADCB9] bg-white shadow-sm">
-          <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] gap-2 border-b bg-[#F8F3E7] p-3 text-sm font-black sm:p-4">
-            <span>Jeu</span><span className="text-center">✨ Nouveauté</span><span className="text-center">❤️ Coup de cœur</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_80px_90px_120px] gap-2 border-b bg-[#F8F3E7] p-3 text-xs font-black sm:p-4 sm:text-sm">
+            <span>Jeu</span><span className="text-center">✨ Nouveau</span><span className="text-center">❤️ Coup de cœur</span><span className="text-center">Disponibilité</span>
           </div>
           {loading ? <p className="p-6">Chargement des réglages…</p> : visibleGames.length === 0 ? <p className="p-6 text-gray-600">Aucun jeu ne correspond à « {search} ».</p> : visibleGames.map((game) => {
             const key = game.code_barre || game.nom;
             const value = flags[key] ?? { nouveaute: game.nouveaute, coup_de_coeur: game.coup_de_coeur };
             return (
-              <div key={key} className="grid grid-cols-[minmax(0,1fr)_110px_120px] items-center gap-2 border-b border-gray-100 p-3 last:border-0 sm:p-4">
+              <div key={key} className="grid grid-cols-[minmax(0,1fr)_80px_90px_120px] items-center gap-2 border-b border-gray-100 p-3 last:border-0 sm:p-4">
                 <div className="min-w-0"><p className="break-words font-bold text-gray-900">{game.nom}</p>{game.code_barre && <p className="text-xs text-gray-500">{game.code_barre}</p>}</div>
                 <label className="flex justify-center"><input aria-label={`Nouveauté : ${game.nom}`} type="checkbox" checked={value.nouveaute} onChange={(e) => toggle(key, "nouveaute", e.target.checked, game)} className="h-5 w-5 accent-[#D6A014]" /></label>
                 <label className="flex justify-center"><input aria-label={`Coup de cœur : ${game.nom}`} type="checkbox" checked={value.coup_de_coeur} onChange={(e) => toggle(key, "coup_de_coeur", e.target.checked, game)} className="h-5 w-5 accent-pink-600" /></label>
+                <div className="flex flex-col items-center gap-1">
+                  {(() => {
+                    const block = blocks[key];
+                    const overlapping = reservations.filter((r) => r.game_code === key && r.status !== "cancelled");
+                    const booked = overlapping.length > 0;
+                    const manuallyBlocked = block?.blocked_manually ?? false;
+                    return <>
+                      <span className={`rounded-full px-2 py-1 text-center text-xs font-bold ${manuallyBlocked ? "bg-red-100 text-red-800" : booked ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}>
+                        {manuallyBlocked ? "Bloqué" : booked ? "Réservé" : "Libre"}
+                      </span>
+                      <button type="button" disabled={availabilitySaving === key} onClick={() => saveAvailability(game, !manuallyBlocked)} className="rounded-lg border border-gray-300 px-2 py-1 text-xs font-bold disabled:opacity-50">
+                        {availabilitySaving === key ? "…" : manuallyBlocked ? "Débloquer" : "Bloquer"}
+                      </button>
+                      {manuallyBlocked && <input aria-label={`Motif de blocage : ${game.nom}`} value={blockReasonDraft[key] ?? block?.block_reason ?? ""} onChange={(e) => setBlockReasonDraft((current) => ({ ...current, [key]: e.target.value }))} onBlur={() => saveAvailability(game, true)} placeholder="Motif (facultatif)" className="w-28 rounded border px-1 py-1 text-xs" />}
+                      {booked && <span className="text-center text-[10px] text-gray-500">{overlapping.map((r) => `${r.date_debut} → ${r.date_retour}`).join(", ")}</span>}
+                    </>;
+                  })()}
+                </div>
               </div>
             );
           })}
