@@ -35,8 +35,12 @@ export async function GET() {
     );
 
     if (!response.ok) {
-      console.error("Erreur de lecture Supabase :", response.status, await response.text());
-      return NextResponse.json({ error: "Impossible de lire les réglages du catalogue." }, { status: 502 });
+      const details = await response.text();
+      console.error("Erreur de lecture Supabase :", response.status, details);
+      let parsed: { message?: string; details?: string; hint?: string; code?: string } = {};
+      try { parsed = JSON.parse(details); } catch {}
+      const diagnostic = [parsed.message, parsed.details, parsed.hint, parsed.code].filter(Boolean).join(" — ");
+      return NextResponse.json({ error: diagnostic ? `Supabase (${response.status}) : ${diagnostic.slice(0, 400)}` : `Impossible de lire les réglages du catalogue (HTTP ${response.status}).` }, { status: 502 });
     }
 
     return NextResponse.json({ flags: await response.json() });
