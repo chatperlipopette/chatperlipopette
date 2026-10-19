@@ -18,6 +18,14 @@ type Flag = { game_code: string; nouveaute: boolean; coup_de_coeur: boolean };
 type AvailabilityBlock = { game_code: string; blocked_manually: boolean; block_reason: string | null };
 type Reservation = { game_code: string; date_debut: string; date_retour: string; status: string };
 
+function normalizeFlagKey(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\\u0300-\\u036f]/g, "")
+    .toLocaleLowerCase("fr")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 export default function AdminCatalogueClient({ games, email }: { games: Game[]; email: string }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [originalCode, setOriginalCode] = useState("");
@@ -42,7 +50,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
         if (active) {
           const next: Record<string, { nouveaute: boolean; coup_de_coeur: boolean }> = {};
           (result.flags as Flag[]).forEach((flag) => {
-            next[flag.game_code] = { nouveaute: flag.nouveaute, coup_de_coeur: flag.coup_de_coeur };
+            next[normalizeFlagKey(flag.game_code)] = { nouveaute: flag.nouveaute === true, coup_de_coeur: flag.coup_de_coeur === true };
           });
           setFlags(next);
         }
@@ -148,9 +156,9 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
   function toggle(code: string, field: "nouveaute" | "coup_de_coeur", value: boolean, original: Game) {
     setFlags((current) => ({
       ...current,
-      [code]: {
-        nouveaute: current[code]?.nouveaute ?? original.nouveaute,
-        coup_de_coeur: current[code]?.coup_de_coeur ?? original.coup_de_coeur,
+      [normalizeFlagKey(code)]: {
+        nouveaute: current[normalizeFlagKey(code)]?.nouveaute ?? false,
+        coup_de_coeur: current[normalizeFlagKey(code)]?.coup_de_coeur ?? false,
         [field]: value,
       },
     }));
@@ -163,8 +171,8 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
     try {
       const payload = games.map((game) => ({
         game_code: game.code_barre || game.nom,
-        nouveaute: flags[game.code_barre || game.nom]?.nouveaute ?? game.nouveaute,
-        coup_de_coeur: flags[game.code_barre || game.nom]?.coup_de_coeur ?? game.coup_de_coeur,
+        nouveaute: flags[normalizeFlagKey(game.code_barre || game.nom)]?.nouveaute ?? false,
+        coup_de_coeur: flags[normalizeFlagKey(game.code_barre || game.nom)]?.coup_de_coeur ?? false,
       }));
       const response = await fetch("/api/admin/catalogue", {
         method: "PATCH",
@@ -246,7 +254,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
           </div>
           {loading ? <p className="p-6">Chargement des réglages…</p> : visibleGames.length === 0 ? <p className="p-6 text-gray-600">Aucun jeu ne correspond à « {search} ».</p> : visibleGames.map((game) => {
             const key = game.code_barre || game.nom;
-            const value = flags[key] ?? { nouveaute: game.nouveaute, coup_de_coeur: game.coup_de_coeur };
+            const value = flags[normalizeFlagKey(key)] ?? { nouveaute: false, coup_de_coeur: false };
             return (
               <div key={key} className="grid grid-cols-[minmax(0,1fr)_80px_90px_120px] items-center gap-2 border-b border-gray-100 p-3 last:border-0 sm:p-4">
                 <div className="min-w-0"><p className="break-words font-bold text-gray-900">{game.nom}</p>{game.code_barre && <p className="text-xs text-gray-500">{game.code_barre}</p>}<p className="mt-1 text-xs text-gray-500">Âge : {game.age === null ? "non indiqué" : `${game.age} ans`} · Location : {game.prix_location === null ? "non indiqué" : `${game.prix_location} €`}</p><button type="button" onClick={() => startEditGame(game)} className="mt-2 rounded-lg border border-gray-300 px-2 py-1 text-xs font-bold">Modifier la fiche</button></div>
