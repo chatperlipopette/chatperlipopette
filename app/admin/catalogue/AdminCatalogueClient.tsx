@@ -2,12 +2,27 @@
 
 import { useEffect, useState } from "react";
 
-type Game = { code_barre: string; nom: string; nouveaute: boolean; coup_de_coeur: boolean; disponibilite: string };
+type Game = {
+  code_barre: string; nom: string; editeur: string; nombre_min: number | null; nombre_max: number | null;
+  duree: string; age: number | null; disponibilite: string; prix_location: number | null; prix_caution: number | null;
+  description: string | null; categories: string; annee: number | null; image_url: string;
+  nouveaute: boolean; coup_de_coeur: boolean;
+};
+type GameDraft = Omit<Game, "nouveaute" | "coup_de_coeur"> & { nouveaute: boolean; coup_de_coeur: boolean };
+const emptyDraft: GameDraft = {
+  code_barre: "", nom: "", editeur: "", nombre_min: null, nombre_max: null, duree: "", age: null,
+  disponibilite: "dispo", prix_location: null, prix_caution: null, description: "", categories: "autres",
+  annee: null, image_url: "", nouveaute: false, coup_de_coeur: false,
+};
 type Flag = { game_code: string; nouveaute: boolean; coup_de_coeur: boolean };
 type AvailabilityBlock = { game_code: string; blocked_manually: boolean; block_reason: string | null };
 type Reservation = { game_code: string; date_debut: string; date_retour: string; status: string };
 
 export default function AdminCatalogueClient({ games, email }: { games: Game[]; email: string }) {
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [originalCode, setOriginalCode] = useState("");
+  const [draft, setDraft] = useState<GameDraft>(emptyDraft);
+  const [gameSaving, setGameSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [flags, setFlags] = useState<Record<string, { nouveaute: boolean; coup_de_coeur: boolean }>>({});
   const [loading, setLoading] = useState(true);
@@ -84,6 +99,52 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
     ? games.filter((game) => normalize(game.nom).includes(query) || normalize(game.code_barre).includes(query))
     : games;
 
+  function startNewGame() {
+    setOriginalCode("");
+    setDraft({ ...emptyDraft });
+    setEditorOpen(true);
+    setMessage("");
+  }
+
+  function startEditGame(game: Game) {
+    setOriginalCode(game.code_barre || game.nom);
+    setDraft({ ...emptyDraft, ...game, description: game.description || "", image_url: game.image_url || "" });
+    setEditorOpen(true);
+    setMessage("");
+  }
+
+  function updateDraft(field: keyof GameDraft, value: string | boolean) {
+    setDraft((current) => ({
+      ...current,
+      [field]: ["age", "nombre_min", "nombre_max", "prix_location", "prix_caution", "annee"].includes(field)
+        ? (value === "" ? null : Number(String(value).replace(",", ".")))
+        : value,
+    }));
+  }
+
+  async function saveGame() {
+    if (!draft.nom.trim()) {
+      setMessage("Le nom du jeu est obligatoire.");
+      return;
+    }
+    setGameSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/jeux", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ original_code: originalCode, game: draft }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Impossible d’enregistrer ce jeu.");
+      window.location.reload();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Enregistrement impossible.");
+    } finally {
+      setGameSaving(false);
+    }
+  }
+
   function toggle(code: string, field: "nouveaute" | "coup_de_coeur", value: boolean, original: Game) {
     setFlags((current) => ({
       ...current,
@@ -132,6 +193,45 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
           <a href="/admin/catalogue/deconnexion" className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-bold">Se déconnecter</a>
         </div>
 
+        <div className="mb-5 flex justify-end">
+          <button type="button" onClick={startNewGame} className="rounded-xl bg-[#E8B223] px-5 py-3 font-black text-black">+ Ajouter un jeu</button>
+        </div>
+
+        {editorOpen && <section className="mb-6 rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-black">{originalCode ? "Modifier un jeu" : "Ajouter un jeu"}</h2>
+            <button type="button" onClick={() => setEditorOpen(false)} className="rounded-lg border px-3 py-2 font-semibold">Fermer</button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {([
+              ["nom", "Nom du jeu", "text"], ["code_barre", "Code-barres / identifiant", "text"],
+              ["editeur", "Éditeur", "text"], ["age", "Âge conseillé (ans)", "number"],
+              ["nombre_min", "Joueurs minimum", "number"], ["nombre_max", "Joueurs maximum", "number"],
+              ["duree", "Durée (ex. 30 min ou 1 h 30)", "text"], ["prix_location", "Prix de location (€)", "number"],
+              ["prix_caution", "Caution (€)", "number"], ["annee", "Année de sortie", "number"],
+              ["categories", "Catégories", "text"], ["image_url", "URL de l’image", "url"],
+            ] as const).map(([field, label, type]) => <label key={field} className="block text-sm font-semibold">
+              {label}
+              <input type={type} min={type === "number" ? 0 : undefined} step={["prix_location", "prix_caution"].includes(field) ? "0.01" : "1"}
+                value={String(draft[field] ?? "")} onChange={(e) => updateDraft(field, e.target.value)}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal" />
+            </label>)}
+            <label className="block text-sm font-semibold">Disponibilité
+              <select value={draft.disponibilite} onChange={(e) => updateDraft("disponibilite", e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal">
+                <option value="dispo">Disponible</option><option value="indisponible">Indisponible</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold sm:col-span-2 lg:col-span-3">Description
+              <textarea value={draft.description || ""} onChange={(e) => updateDraft("description", e.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-normal" />
+            </label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={draft.nouveaute} onChange={(e) => updateDraft("nouveaute", e.target.checked)} /> Nouveauté</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={draft.coup_de_coeur} onChange={(e) => updateDraft("coup_de_coeur", e.target.checked)} /> Coup de cœur</label>
+          </div>
+          <div className="mt-5 flex justify-end">
+            <button type="button" onClick={saveGame} disabled={gameSaving} className="rounded-xl bg-[#E8B223] px-5 py-3 font-black disabled:opacity-50">{gameSaving ? "Enregistrement…" : "Enregistrer le jeu"}</button>
+          </div>
+        </section>}
+
         <div className="mb-5 rounded-2xl border border-[#EADCB9] bg-white p-4 md:p-6">
           <label htmlFor="search-games" className="mb-2 block font-bold">Rechercher un jeu</label>
           <input id="search-games" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom ou code-barres…" className="w-full rounded-xl border border-gray-300 px-4 py-3" />
@@ -149,7 +249,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
             const value = flags[key] ?? { nouveaute: game.nouveaute, coup_de_coeur: game.coup_de_coeur };
             return (
               <div key={key} className="grid grid-cols-[minmax(0,1fr)_80px_90px_120px] items-center gap-2 border-b border-gray-100 p-3 last:border-0 sm:p-4">
-                <div className="min-w-0"><p className="break-words font-bold text-gray-900">{game.nom}</p>{game.code_barre && <p className="text-xs text-gray-500">{game.code_barre}</p>}</div>
+                <div className="min-w-0"><p className="break-words font-bold text-gray-900">{game.nom}</p>{game.code_barre && <p className="text-xs text-gray-500">{game.code_barre}</p>}<p className="mt-1 text-xs text-gray-500">Âge : {game.age === null ? "non indiqué" : `${game.age} ans`} · Location : {game.prix_location === null ? "non indiqué" : `${game.prix_location} €`}</p><button type="button" onClick={() => startEditGame(game)} className="mt-2 rounded-lg border border-gray-300 px-2 py-1 text-xs font-bold">Modifier la fiche</button></div>
                 <label className="flex justify-center"><input aria-label={`Nouveauté : ${game.nom}`} type="checkbox" checked={value.nouveaute} onChange={(e) => toggle(key, "nouveaute", e.target.checked, game)} className="h-5 w-5 accent-[#D6A014]" /></label>
                 <label className="flex justify-center"><input aria-label={`Coup de cœur : ${game.nom}`} type="checkbox" checked={value.coup_de_coeur} onChange={(e) => toggle(key, "coup_de_coeur", e.target.checked, game)} className="h-5 w-5 accent-pink-600" /></label>
                 <div className="flex flex-col items-center gap-1">
