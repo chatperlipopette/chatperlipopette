@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { getGames, type Game } from "../lib/games";
+import { getCatalogueFlags } from "../lib/catalogue-flags";
 
 export default async function FeaturedGames() {
   let games: Game[] = [];
   try {
-    games = await getGames();
+    const [sourceGames, flags] = await Promise.all([getGames(), getCatalogueFlags()]);
+    games = sourceGames.map((game) => {
+      const savedFlags = flags.get(game.code_barre || game.nom);
+      return savedFlags ? { ...game, ...savedFlags } : game;
+    });
   } catch (error) {
     console.error("Impossible de charger les nouveautés et coups de cœur :", error);
     return null;
