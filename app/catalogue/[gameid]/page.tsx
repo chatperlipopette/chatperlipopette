@@ -1,5 +1,6 @@
 import { getGames, formatDuration } from "../../../lib/games";
 import Link from "next/link";
+import GameFeedback from "./GameFeedback";
 
 type Props = {
   params: Promise<{
@@ -388,6 +389,8 @@ export default async function GamePage({
               </div>
 
             </div>
+
+            <GameFeedback gameCode={codeBarre || code} gameName={nom} />
 
             {/* =================================================
                 RÉSERVATION
