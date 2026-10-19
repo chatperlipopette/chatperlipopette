@@ -10,7 +10,7 @@ export default async function Catalogue() {
     const games = sourceGames.map((game) => {
       const key = game.code_barre || game.nom;
       const savedFlags = flags.get(key);
-      return savedFlags ? { ...game, ...savedFlags } : game;
+      return { ...game, nouveaute: savedFlags?.nouveaute ?? false, coup_de_coeur: savedFlags?.coup_de_coeur ?? false };
     });
 
     return (
