@@ -8,7 +8,7 @@ export default async function FeaturedGames() {
     const [sourceGames, flags] = await Promise.all([getGames(), getCatalogueFlags()]);
     games = sourceGames.map((game) => {
       const savedFlags = flags.get(game.code_barre || game.nom);
-      return savedFlags ? { ...game, ...savedFlags } : game;
+      return { ...game, nouveaute: savedFlags?.nouveaute ?? false, coup_de_coeur: savedFlags?.coup_de_coeur ?? false };
     });
   } catch (error) {
     console.error("Impossible de charger les nouveautés et coups de cœur :", error);
