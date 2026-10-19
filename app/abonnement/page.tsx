@@ -18,7 +18,7 @@ const plans: Record<Plan, { name: string; price: string; amount: number; descrip
     price: "9,99 €",
     amount: 9.99,
     description: "La formule supérieure pour les joueurs réguliers.",
-    benefits: ["Les avantages du Club", "Une formule pensée pour les joueurs réguliers", "Les avantages Premium précis restent à confirmer"],
+    benefits: ["Tous les avantages du Club", "Priorité pour découvrir et réserver les nouveautés", "Accès prioritaire aux nouveaux jeux mis en location"],
   },
 };
 
