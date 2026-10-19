@@ -283,6 +283,46 @@ function makeShortDescription(game: {
   return `Découvrez ${game.nom} : un jeu de ${theme}.${practicalInfo} Retrouvez-le à la location chez Chat’Perlipopette !`;
 }
 
+
+async function applyAdminGameEdits(games: Game[]): Promise<Game[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !key) return games;
+
+  try {
+    const response = await fetch(
+      `${url}/rest/v1/catalogue_game_edits?select=game_code,game_data,is_deleted`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" }
+    );
+    if (!response.ok) {
+      console.error("Lecture des modifications admin impossible :", response.status, await response.text());
+      return games;
+    }
+
+    const edits = await response.json() as { game_code: string; game_data: Partial<Game>; is_deleted: boolean }[];
+    const byCode = new Map(edits.map((edit) => [edit.game_code, edit]));
+    const result: Game[] = [];
+    const seen = new Set<string>();
+
+    for (const original of games) {
+      const code = original.code_barre || original.nom;
+      const edit = byCode.get(code);
+      if (edit?.is_deleted) continue;
+      result.push(edit ? { ...original, ...edit.game_data, code_barre: edit.game_data.code_barre || original.code_barre } : original);
+      seen.add(code);
+    }
+
+    for (const edit of edits) {
+      if (seen.has(edit.game_code) || edit.is_deleted || !edit.game_data) continue;
+      result.push(edit.game_data as Game);
+    }
+    return result;
+  } catch (error) {
+    console.error("Impossible de charger les modifications de jeux :", error);
+    return games;
+  }
+}
+
 /* RÉCUPÉRATION DES JEUX */
 export async function getGames(): Promise<Game[]> {
   const response = await fetch(GOOGLE_SHEETS_URL, {
@@ -394,5 +434,5 @@ export async function getGames(): Promise<Game[]> {
 
   console.log(`Catalogue chargé : ${games.length} jeux`);
 
-  return games;
+  return await applyAdminGameEdits(games);
 }
