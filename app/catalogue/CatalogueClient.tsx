@@ -187,6 +187,24 @@ export default function CatalogueClient({ games }: Props) {
     });
   }, [games, search, category, availability, specialFilter]);
 
+  const similarGames = useMemo(() => {
+    if (specialFilter !== "coups-de-coeur") return [];
+    const likedGames = games.filter((game) => game.coup_de_coeur === true);
+    const likedIds = new Set(likedGames.map((game) => game.code_barre || game.nom));
+    const likedCategories = new Set(
+      likedGames.flatMap((game) => (game.categories || "").split(",").map((item) => normalize(item)).filter(Boolean))
+    );
+    if (likedCategories.size === 0) return [];
+    return games
+      .filter((game) => {
+        const id = game.code_barre || game.nom;
+        if (likedIds.has(id) || game.coup_de_coeur === true) return false;
+        return (game.categories || "").split(",").map((item) => normalize(item)).some((category) => likedCategories.has(category));
+      })
+      .sort((a, b) => a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" }))
+      .slice(0, 8);
+  }, [games, specialFilter]);
+
   return (
     <section>
       <div className="mb-8 rounded-3xl border border-[#EADCB9] bg-white p-5 shadow-sm md:p-7">
@@ -366,6 +384,28 @@ export default function CatalogueClient({ games }: Props) {
             );
           })}
         </div>
+      )}
+
+      {specialFilter === "coups-de-coeur" && similarGames.length > 0 && (
+        <section className="mt-12">
+          <div className="mb-5">
+            <p className="font-extrabold uppercase tracking-widest text-[#9A6B00]">À découvrir aussi</p>
+            <h2 className="mt-2 text-2xl font-black text-gray-900">🎲 Des jeux dans le même style</h2>
+            <p className="mt-2 text-gray-600">D’autres jeux qui partagent les catégories de tes coups de cœur, sans être marqués comme coups de cœur.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {similarGames.map((game) => (
+              <article key={game.code_barre || game.nom} className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
+                <h3 className="text-lg font-black text-gray-900">{game.nom}</h3>
+                {game.categories && <p className="mt-2 text-sm font-semibold text-[#806000]">{game.categories}</p>}
+                {game.editeur && <p className="mt-2 text-sm text-gray-500">Éditeur : {game.editeur}</p>}
+                <Link href={`/catalogue/${encodeURIComponent(game.code_barre || game.nom)}`} className="mt-4 inline-block font-extrabold underline underline-offset-4">
+                  Voir le jeu →
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
     </section>
   );
