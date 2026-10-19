@@ -14,5 +14,6 @@ export default async function AdminCataloguePage() {
     nom: game.nom,
     nouveaute: game.nouveaute ?? false,
     coup_de_coeur: game.coup_de_coeur ?? false,
+    disponibilite: game.disponibilite,
   }))} email="Administrateur" />;
 }
