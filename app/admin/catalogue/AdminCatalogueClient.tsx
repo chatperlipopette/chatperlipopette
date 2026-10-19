@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Game = { code_barre: string; nom: string; nouveaute: boolean; coup_de_coeur: boolean };
+type Game = { code_barre: string; nom: string; nouveaute: boolean; coup_de_coeur: boolean; disponibilite: string };
 type Flag = { game_code: string; nouveaute: boolean; coup_de_coeur: boolean };
 type AvailabilityBlock = { game_code: string; blocked_manually: boolean; block_reason: string | null };
 type Reservation = { game_code: string; date_debut: string; date_retour: string; status: string };
@@ -158,9 +158,10 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
                     const overlapping = reservations.filter((r) => r.game_code === key && r.status !== "cancelled");
                     const booked = overlapping.length > 0;
                     const manuallyBlocked = block?.blocked_manually ?? false;
+                    const sourceUnavailable = ["indisponible", "indispo", "non", "no", "false"].includes(normalize(game.disponibilite));
                     return <>
-                      <span className={`rounded-full px-2 py-1 text-center text-xs font-bold ${manuallyBlocked ? "bg-red-100 text-red-800" : booked ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}>
-                        {manuallyBlocked ? "Bloqué" : booked ? "Réservé" : "Libre"}
+                      <span className={`rounded-full px-2 py-1 text-center text-xs font-bold ${manuallyBlocked || sourceUnavailable ? "bg-red-100 text-red-800" : booked ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}>
+                        {manuallyBlocked ? "Bloqué admin" : booked ? "Réservé" : sourceUnavailable ? "Indisponible" : "Libre"}
                       </span>
                       <button type="button" disabled={availabilitySaving === key} onClick={() => saveAvailability(game, !manuallyBlocked)} className="rounded-lg border border-gray-300 px-2 py-1 text-xs font-bold disabled:opacity-50">
                         {availabilitySaving === key ? "…" : manuallyBlocked ? "Débloquer" : "Bloquer"}
