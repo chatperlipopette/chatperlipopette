@@ -20,9 +20,9 @@ export async function GET(request: Request) {
     api.searchParams.set("action", "query");
     api.searchParams.set("format", "json");
     api.searchParams.set("generator", "search");
-    api.searchParams.set("gsrsearch", `filetype:bitmap "${name}" board game`);
+    api.searchParams.set("gsrsearch", `filetype:bitmap "${name}" (board game OR jeu de société OR game)`);
     api.searchParams.set("gsrnamespace", "6");
-    api.searchParams.set("gsrlimit", "8");
+    api.searchParams.set("gsrlimit", "20");
     api.searchParams.set("prop", "imageinfo");
     api.searchParams.set("iiprop", "url|extmetadata");
     api.searchParams.set("iiurlwidth", "500");
@@ -50,7 +50,9 @@ export async function GET(request: Request) {
       const info = page.imageinfo?.[0];
       const license = info?.extmetadata?.LicenseShortName?.value || "";
       const title = normalizeTitle((page.title || "").replace(/^File:/i, ""));
-      const exactTitleMatch = title.includes(requested) || requested.includes(title);
+      const requestedWords = requested.split(" ").filter((word) => word.length >= 3);
+      const exactTitleMatch = title.includes(requested) || requested.includes(title) ||
+        (requestedWords.length > 0 && requestedWords.every((word) => title.includes(word)));
       const commerciallyReusable = /public domain|cc0|cc by(?:-sa)?(?:\s|$)/i.test(license);
 
       // N'utiliser que des images dont la licence annoncée permet en principe la réutilisation commerciale.
