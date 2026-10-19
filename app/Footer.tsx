@@ -29,7 +29,7 @@ const contacts = [
 
 export default function Footer() {
   return (
-    <footer className="mt-auto bg-[#24211B] text-white">
+    <footer aria-label="Pied de page et coordonnées" className="mt-auto bg-[#24211B] text-white">
       <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.2fr_2fr]">
           <div>
