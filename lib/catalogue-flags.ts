@@ -3,6 +3,16 @@ export type CatalogueFlags = {
   coup_de_coeur: boolean;
 };
 
+// Rend les identifiants cohérents même si un code-barres ou un nom contient
+// des espaces, des accents ou des différences de majuscules.
+export function normalizeCatalogueKey(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 export async function getCatalogueFlags(): Promise<Map<string, CatalogueFlags>> {
   // Cette fonction est appelée uniquement côté serveur. Utiliser la clé de service
   // permet de lire les réglages même si la table est protégée par RLS.
@@ -28,8 +38,8 @@ export async function getCatalogueFlags(): Promise<Map<string, CatalogueFlags>> 
       coup_de_coeur: boolean;
     }>;
     return new Map(data.map((row) => [
-      String(row.game_code),
-      { nouveaute: Boolean(row.nouveaute), coup_de_coeur: Boolean(row.coup_de_coeur) },
+      normalizeCatalogueKey(row.game_code),
+      { nouveaute: row.nouveaute === true, coup_de_coeur: row.coup_de_coeur === true },
     ]));
   } catch (error) {
     console.error("Lecture des badges impossible :", error);
