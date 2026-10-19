@@ -67,15 +67,17 @@ function categoryLabel(value: string): string {
 function GameCover({ game }: { game: Game }) {
   const [imageFailed, setImageFailed] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
-  const imageUrl = imageFailed ? fallbackUrl : (game.image_url || fallbackUrl);
+  const primaryImageUrl = game.image_url?.startsWith("https://") ? game.image_url : null;
+  const imageUrl = primaryImageUrl && !imageFailed ? primaryImageUrl : fallbackUrl;
 
   useEffect(() => {
-    // Si la couverture BnF charge, on la garde. Sinon on lance la recherche de secours.
-    if (game.image_url && !imageFailed) return;
+    // Si l'image enregistrée est valide, on la garde. Sinon, recherche d'une image de secours.
+    if (primaryImageUrl && !imageFailed) return;
 
     let cancelled = false;
+    setFallbackUrl(null);
 
-    fetch(`/api/game-cover?name=${encodeURIComponent(game.nom)}`)
+    fetch(`/api/game-cover?name=${encodeURIComponent(game.nom)}`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() : null)
       .then((data) => {
         if (!cancelled && typeof data?.imageUrl === "string" && data.imageUrl.startsWith("https://")) {
@@ -89,7 +91,7 @@ function GameCover({ game }: { game: Game }) {
     return () => {
       cancelled = true;
     };
-  }, [game.image_url, game.nom, imageFailed]);
+  }, [primaryImageUrl, game.nom, imageFailed]);
 
   return (
     <div className="flex h-52 items-center justify-center bg-[#F8F3E7] p-3">
@@ -101,7 +103,7 @@ function GameCover({ game }: { game: Game }) {
           loading="lazy"
           className="h-full w-full object-contain"
           onError={() => {
-            if (!imageFailed) {
+            if (primaryImageUrl && !imageFailed) {
               setImageFailed(true);
             } else {
               setFallbackUrl(null);
