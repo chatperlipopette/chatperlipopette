@@ -9,17 +9,20 @@ function config() {
   return url && key ? { url, key } : null;
 }
 
+function readableError(error: unknown) {
+  if (error instanceof Error) {
+    const cause = (error as Error & { cause?: { code?: string; message?: string } }).cause;
+    return [error.message, cause?.code, cause?.message].filter(Boolean).join(" — ").slice(0, 400);
+  }
+  return "Erreur inconnue.";
+}
+
 async function db(path: string, init: RequestInit = {}) {
   const cfg = config();
-  if (!cfg) throw new Error("Configuration Supabase manquante.");
+  if (!cfg) throw new Error("Configuration Supabase manquante : vérifie les variables Vercel du projet qui sert le site.");
   const response = await fetch(`${cfg.url}/rest/v1/${path}`, {
     ...init,
-    headers: {
-      apikey: cfg.key,
-      Authorization: `Bearer ${cfg.key}`,
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
+    headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, "Content-Type": "application/json", ...(init.headers || {}) },
     cache: "no-store",
   });
   const text = await response.text();
@@ -36,7 +39,9 @@ export async function GET() {
     ]);
     return NextResponse.json({ blocks, reservations });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Chargement indisponible." }, { status: 502 });
+    const diagnostic = readableError(error);
+    console.error("Erreur chargement disponibilité :", diagnostic);
+    return NextResponse.json({ error: diagnostic }, { status: 502 });
   }
 }
 
@@ -47,8 +52,6 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.game_code !== "string" || !body.game_code.trim() || typeof body.blocked_manually !== "boolean") {
       return NextResponse.json({ error: "Réglage de disponibilité invalide." }, { status: 400 });
     }
-    // catalogue_game_availability currently contains only these three columns.
-    // Do not send updated_at unless that column exists in the deployed schema.
     const rows = await db("catalogue_game_availability?on_conflict=game_code", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates,return=representation" },
@@ -60,6 +63,8 @@ export async function PATCH(request: NextRequest) {
     });
     return NextResponse.json({ ok: true, item: rows[0] });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Sauvegarde impossible." }, { status: 502 });
+    const diagnostic = readableError(error);
+    console.error("Erreur sauvegarde disponibilité :", diagnostic);
+    return NextResponse.json({ error: diagnostic }, { status: 502 });
   }
 }
