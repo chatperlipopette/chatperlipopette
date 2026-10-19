@@ -4,9 +4,14 @@ export type CatalogueFlags = {
 };
 
 export async function getCatalogueFlags(): Promise<Map<string, CatalogueFlags>> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return new Map();
+  // Cette fonction est appelée uniquement côté serveur. Utiliser la clé de service
+  // permet de lire les réglages même si la table est protégée par RLS.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.SUPABASE_SECRET_KEY?.trim();
+  if (!url || !key) {
+    console.error("Configuration Supabase manquante pour les nouveautés/coups de cœur.");
+    return new Map();
+  }
 
   try {
     const response = await fetch(
@@ -14,7 +19,7 @@ export async function getCatalogueFlags(): Promise<Map<string, CatalogueFlags>> 
       { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" }
     );
     if (!response.ok) {
-      console.error("Lecture des nouveautés/coups de cœur impossible :", response.status);
+      console.error("Lecture des nouveautés/coups de cœur impossible :", response.status, (await response.text()).slice(0, 300));
       return new Map();
     }
     const data = await response.json() as Array<{
