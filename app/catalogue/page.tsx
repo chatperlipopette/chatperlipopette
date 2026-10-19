@@ -1,5 +1,5 @@
 import { getGames } from "../../lib/games";
-import { getCatalogueFlags } from "../../lib/catalogue-flags";
+import { getCatalogueFlags, normalizeCatalogueKey } from "../../lib/catalogue-flags";
 import CatalogueClient from "./CatalogueClient";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +8,13 @@ export default async function Catalogue() {
   try {
     const [sourceGames, flags] = await Promise.all([getGames(), getCatalogueFlags()]);
     const games = sourceGames.map((game) => {
-      const key = game.code_barre || game.nom;
+      const key = normalizeCatalogueKey(game.code_barre || game.nom);
       const savedFlags = flags.get(key);
-      return { ...game, nouveaute: savedFlags?.nouveaute ?? false, coup_de_coeur: savedFlags?.coup_de_coeur ?? false };
+      return {
+        ...game,
+        nouveaute: savedFlags?.nouveaute === true,
+        coup_de_coeur: savedFlags?.coup_de_coeur === true,
+      };
     });
 
     return (
