@@ -47,6 +47,8 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.game_code !== "string" || !body.game_code.trim() || typeof body.blocked_manually !== "boolean") {
       return NextResponse.json({ error: "Réglage de disponibilité invalide." }, { status: 400 });
     }
+    // catalogue_game_availability currently contains only these three columns.
+    // Do not send updated_at unless that column exists in the deployed schema.
     const rows = await db("catalogue_game_availability?on_conflict=game_code", {
       method: "POST",
       headers: { Prefer: "resolution=merge-duplicates,return=representation" },
@@ -54,7 +56,6 @@ export async function PATCH(request: NextRequest) {
         game_code: body.game_code.trim(),
         blocked_manually: body.blocked_manually,
         block_reason: typeof body.block_reason === "string" ? body.block_reason.trim().slice(0, 250) : null,
-        updated_at: new Date().toISOString(),
       }]),
     });
     return NextResponse.json({ ok: true, item: rows[0] });
