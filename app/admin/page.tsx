@@ -19,6 +19,10 @@ export default function Admin() {
           <h2 className="text-2xl font-bold">🎲 Gérer les jeux</h2>
           <p className="mt-2">Modifier les jeux, les prix et les disponibilités.</p>
         </Link>
+        <Link href="/admin/feedback" className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
+          <h2 className="text-2xl font-bold">💬 Avis et questions</h2>
+          <p className="mt-2">Modérer les avis des jeux et répondre aux questions des visiteurs.</p>
+        </Link>
         <Link href="/admin/reservations" className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
           <h2 className="text-2xl font-bold">📅 Réservations</h2>
           <p className="mt-2">Voir les locations en cours.</p>
