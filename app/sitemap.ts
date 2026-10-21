@@ -1,6 +1,7 @@
+
 import type { MetadataRoute } from "next";
 
-const siteUrl = "https://chatperlipopette.com";
+const siteUrl = "https://chatperlipopette-nine.vercel.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
