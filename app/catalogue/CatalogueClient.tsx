@@ -124,6 +124,19 @@ function GameCover({ game }: { game: Game }) {
   );
 }
 
+function durationInMinutes(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const text = normalize(value);
+  const hourMatch = text.match(/(\d+(?:[.,]\d+)?)\s*h\b/);
+  const minuteMatch = text.match(/(\d+)\s*(?:min|minute|minutes)\b/);
+  if (hourMatch || minuteMatch) {
+    return (hourMatch ? Number(hourMatch[1].replace(",", ".")) * 60 : 0) +
+      (minuteMatch ? Number(minuteMatch[1]) : 0);
+  }
+  const numberMatch = text.match(/\d+/);
+  return numberMatch ? Number(numberMatch[0]) : null;
+}
+
 function formatPrice(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "Non indiqué";
   return new Intl.NumberFormat("fr-FR", {
@@ -138,6 +151,10 @@ export default function CatalogueClient({ games }: Props) {
   const [category, setCategory] = useState("tous");
   const [availability, setAvailability] = useState("tous");
   const [specialFilter, setSpecialFilter] = useState("tous");
+  const [ageFilter, setAgeFilter] = useState("tous");
+  const [durationFilter, setDurationFilter] = useState("tous");
+  const [playersFilter, setPlayersFilter] = useState("tous");
+  const [maxPriceFilter, setMaxPriceFilter] = useState("tous");
 
   const filteredGames = useMemo(() => {
     const searchTerms = normalize(search).split(" ").filter(Boolean);
@@ -183,9 +200,38 @@ export default function CatalogueClient({ games }: Props) {
         (specialFilter === "nouveautes" && game.nouveaute === true) ||
         (specialFilter === "coups-de-coeur" && game.coup_de_coeur === true);
 
-      return matchesSearch && matchesCategory && matchesAvailability && matchesSpecial;
+      const matchesAge =
+        ageFilter === "tous" ||
+        (game.age !== null && game.age <= Number(ageFilter));
+
+      const minutes = durationInMinutes(game.duree);
+      const matchesDuration =
+        durationFilter === "tous" ||
+        (minutes !== null && (
+          (durationFilter === "15" && minutes < 15) ||
+          (durationFilter === "15-30" && minutes >= 15 && minutes <= 30) ||
+          (durationFilter === "30-60" && minutes > 30 && minutes <= 60) ||
+          (durationFilter === "60+" && minutes > 60)
+        ));
+
+      const matchesPlayers =
+        playersFilter === "tous" ||
+        (game.nombre_min !== null && game.nombre_max !== null && (
+          (playersFilter === "1" && game.nombre_min <= 1 && game.nombre_max >= 1) ||
+          (playersFilter === "2" && game.nombre_min <= 2 && game.nombre_max >= 2) ||
+          (playersFilter === "3-4" && game.nombre_min <= 4 && game.nombre_max >= 3) ||
+          (playersFilter === "5-6" && game.nombre_min <= 6 && game.nombre_max >= 5) ||
+          (playersFilter === "7+" && game.nombre_max >= 7)
+        ));
+
+      const matchesPrice =
+        maxPriceFilter === "tous" ||
+        (game.prix_location !== null && game.prix_location <= Number(maxPriceFilter));
+
+      return matchesSearch && matchesCategory && matchesAvailability && matchesSpecial &&
+        matchesAge && matchesDuration && matchesPlayers && matchesPrice;
     });
-  }, [games, search, category, availability, specialFilter]);
+  }, [games, search, category, availability, specialFilter, ageFilter, durationFilter, playersFilter, maxPriceFilter]);
 
   const similarGames = useMemo(() => {
     if (specialFilter !== "coups-de-coeur") return [];
@@ -259,6 +305,53 @@ export default function CatalogueClient({ games }: Props) {
           </div>
         </div>
 
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="age-filter" className="text-sm font-bold text-gray-700">Âge minimum conseillé</label>
+            <select id="age-filter" value={ageFilter} onChange={(event) => setAgeFilter(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2">
+              <option value="tous">Tous les âges</option>
+              <option value="3">Jusqu'à 3 ans</option>
+              <option value="6">Jusqu'à 6 ans</option>
+              <option value="8">Jusqu'à 8 ans</option>
+              <option value="10">Jusqu'à 10 ans</option>
+              <option value="12">Jusqu'à 12 ans</option>
+              <option value="14">Jusqu'à 14 ans</option>
+              <option value="18">Jusqu'à 18 ans</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="duration-filter" className="text-sm font-bold text-gray-700">Durée d'une partie</label>
+            <select id="duration-filter" value={durationFilter} onChange={(event) => setDurationFilter(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2">
+              <option value="tous">Toutes les durées</option>
+              <option value="15">Moins de 15 minutes</option>
+              <option value="15-30">15 à 30 minutes</option>
+              <option value="30-60">30 à 60 minutes</option>
+              <option value="60+">Plus d'une heure</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="players-filter" className="text-sm font-bold text-gray-700">Nombre de joueurs</label>
+            <select id="players-filter" value={playersFilter} onChange={(event) => setPlayersFilter(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2">
+              <option value="tous">Tous les nombres</option>
+              <option value="1">Solo</option>
+              <option value="2">2 joueurs</option>
+              <option value="3-4">3 à 4 joueurs</option>
+              <option value="5-6">5 à 6 joueurs</option>
+              <option value="7+">7 joueurs et plus</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="price-filter" className="text-sm font-bold text-gray-700">Prix maximum de location</label>
+            <select id="price-filter" value={maxPriceFilter} onChange={(event) => setMaxPriceFilter(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2">
+              <option value="tous">Tous les prix</option>
+              <option value="2">Jusqu'à 2 €</option>
+              <option value="5">Jusqu'à 5 €</option>
+              <option value="10">Jusqu'à 10 €</option>
+              <option value="15">Jusqu'à 15 €</option>
+            </select>
+          </div>
+        </div>
+
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
           <label htmlFor="availability-filter" className="text-sm font-bold text-gray-700">
             Disponibilité
@@ -291,6 +384,10 @@ export default function CatalogueClient({ games }: Props) {
               setCategory("tous");
               setAvailability("tous");
               setSpecialFilter("tous");
+              setAgeFilter("tous");
+              setDurationFilter("tous");
+              setPlayersFilter("tous");
+              setMaxPriceFilter("tous");
             }}
             className="mt-5 rounded-xl bg-[#E8B223] px-5 py-3 font-bold text-black hover:bg-[#D6A014]"
           >
