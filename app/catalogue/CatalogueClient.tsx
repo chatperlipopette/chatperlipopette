@@ -233,7 +233,7 @@ export default function CatalogueClient({ games }: Props) {
 
       const matchesAge =
         ageFilter === "tous" ||
-        (game.age !== null && game.age <= Number(ageFilter));
+        (game.age !== null && game.age >= Number(ageFilter));
 
       const minutes = durationInMinutes(game.duree);
       const matchesDuration =
