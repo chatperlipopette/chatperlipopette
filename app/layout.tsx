@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Footer from "./Footer";
@@ -15,7 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Chat'Perlipopette | Location de jeux de société",
-  description: "Découvrez et louez des jeux de société avec Chat'Perlipopette.",
+  description:
+    "Découvrez et louez des jeux de société avec Chat'Perlipopette.",
+  verification: {
+    google:"2LoZ38vIMfSQqvj3e4ahmBGGCh-U8e_saH3gk1TWPsk" />,
+  },
 };
 
 export default function RootLayout({
