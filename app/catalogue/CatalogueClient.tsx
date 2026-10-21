@@ -129,38 +129,34 @@ function durationInMinutes(value: string | null | undefined): number | null {
 
   const raw = value.trim().toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[‐‑‒–—―−]/g, "-")
     .replace(/\s+/g, " ");
 
-  const endpointMinutes = (amount: string, unit: string) => {
-    const number = Number(amount.replace(",", "."));
-    return /^(h|hr|hrs|heure|heures)$/.test(unit) ? number * 60 : number;
+  const toMinutes = (amount: string, unit = "") => {
+    const n = Number(amount.replace(",", "."));
+    return /^(h|hr|hrs|heure|heures)$/.test(unit) ? n * 60 : n;
   };
 
-  // Convertit chaque extrémité indépendamment : « 30min-1h » = 30 à 60 minutes.
-  const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
+  // Plages comme « 30 min–1 h », « 30-60 min » ou « 0,5 à 1 heure ».
+  const range = raw.match(/(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?/);
   if (range) {
     const unit1 = range[2] || range[4] || "";
     const unit2 = range[4] || range[2] || "";
-    return Math.max(endpointMinutes(range[1], unit1), endpointMinutes(range[3], unit2));
+    return Math.max(toMinutes(range[1], unit1), toMinutes(range[3], unit2));
   }
 
-  // « 30–60 min » (format d'affichage du catalogue).
-  const displayedRange = raw.match(/^(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)\s*(?:m|min|minute|minutes)$/);
-  if (displayedRange) return Number(displayedRange[2].replace(",", "."));
-
   const combined = raw.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\s*(\d+)\s*(?:m|min|minute|minutes)?$/);
-  if (combined) return Number(combined[1].replace(",", ".")) * 60 + Number(combined[2]);
+  if (combined) return toMinutes(combined[1], "h") + Number(combined[2]);
 
   const single = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
-  if (single) return endpointMinutes(single[1], single[2] || "");
+  if (single) return toMinutes(single[1], single[2] || "");
 
-  // Dernier recours : convertir la valeur formatée partagée avec les cartes.
   const formatted = formatDuration(value).toLowerCase().normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "").trim();
-  const fallbackRange = formatted.match(/^(\d+)\s*[–-]\s*(\d+)\s*min$/);
-  if (fallbackRange) return Number(fallbackRange[2]);
-  const fallback = formatted.match(/^(\d+)\s*min$/);
-  if (fallback) return Number(fallback[1]);
+    .replace(/[\u0300-\u036f]/g, "").replace(/[‐‑‒–—―−]/g, "-").trim();
+  const formattedRange = formatted.match(/^(\d+)\s*-\s*(\d+)\s*min$/);
+  if (formattedRange) return Number(formattedRange[2]);
+  const formattedSingle = formatted.match(/^(\d+)\s*min$/);
+  if (formattedSingle) return Number(formattedSingle[1]);
   return null;
 }
 
