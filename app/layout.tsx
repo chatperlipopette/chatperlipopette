@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Footer from "./Footer";
 import "./globals.css";
 
-const siteUrl = "https://chatperlipopette-nine.vercel.app";
+const siteUrl = "https://chatperlipopette.com";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
