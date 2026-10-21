@@ -135,7 +135,6 @@ function durationInMinutes(value: string | null | undefined): number | null {
   // so a long game is never shown in a shorter-duration filter.
   const range = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures|min|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|minute|minutes)?/);
   if (range) {
-    const unit = range[3] || range[2] && /h|heure|hr/.test(formatted) ? "h" : "";
     const first = Number(range[1].replace(",", "."));
     const second = Number(range[2].replace(",", "."));
     const hasHours = /\b(h|hr|hrs|heure|heures)\b/.test(formatted);
