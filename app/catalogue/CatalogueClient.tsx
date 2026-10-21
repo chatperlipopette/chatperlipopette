@@ -235,7 +235,7 @@ export default function CatalogueClient({ games }: Props) {
       const matchesDuration =
         durationFilter === "tous" ||
         (minutes !== null && (
-          (durationFilter === "15" && minutes < 15) ||
+          (durationFilter === "15" && minutes <= 15) ||
           (durationFilter === "15-30" && minutes >= 15 && minutes <= 30) ||
           (durationFilter === "30-60" && minutes > 30 && minutes <= 60) ||
           (durationFilter === "60+" && minutes > 60)
