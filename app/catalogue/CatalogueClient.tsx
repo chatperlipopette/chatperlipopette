@@ -131,43 +131,39 @@ function durationInMinutes(value: string | null | undefined): number | null {
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ");
 
-  const toMinutes = (amount: string, unit = "") => {
+  const endpointMinutes = (amount: string, unit: string) => {
     const number = Number(amount.replace(",", "."));
     return /^(h|hr|hrs|heure|heures)$/.test(unit) ? number * 60 : number;
   };
 
-  // Pour une plage (ex. 30min-1h), la durée retenue est toujours la borne la plus longue.
-  const range = raw.match(/(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|–|—|à|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?/);
+  // Convertit chaque extrémité indépendamment : « 30min-1h » = 30 à 60 minutes.
+  const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
   if (range) {
-    const firstUnit = range[2] || range[4] || "";
-    const secondUnit = range[4] || range[2] || "";
-    return Math.max(toMinutes(range[1], firstUnit), toMinutes(range[3], secondUnit));
+    const unit1 = range[2] || range[4] || "";
+    const unit2 = range[4] || range[2] || "";
+    return Math.max(endpointMinutes(range[1], unit1), endpointMinutes(range[3], unit2));
   }
 
-  // Durées avec heures et minutes, par exemple 1h30 ou 1 h 30 min.
-  const hourMinute = raw.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\s*(\d+)\s*(?:m|min|minute|minutes)?$/);
-  if (hourMinute) return toMinutes(hourMinute[1], "h") + Number(hourMinute[2]);
+  // « 30–60 min » (format d'affichage du catalogue).
+  const displayedRange = raw.match(/^(\d+(?:[.,]\d+)?)\s*[–-]\s*(\d+(?:[.,]\d+)?)\s*(?:m|min|minute|minutes)$/);
+  if (displayedRange) return Number(displayedRange[2].replace(",", "."));
 
-  const hours = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures)$/);
-  if (hours) return toMinutes(hours[1], hours[2]);
+  const combined = raw.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\s*(\d+)\s*(?:m|min|minute|minutes)?$/);
+  if (combined) return Number(combined[1].replace(",", ".")) * 60 + Number(combined[2]);
 
-  const minutes = raw.match(/^(\d+(?:[.,]\d+)?)\s*(m|min|minute|minutes)$/);
-  if (minutes) return Number(minutes[1].replace(",", "."));
+  const single = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
+  if (single) return endpointMinutes(single[1], single[2] || "");
 
-  // Un nombre sans unité dans le tableur est considéré comme des minutes.
-  if (/^\d+(?:[.,]\d+)?$/.test(raw)) return Number(raw.replace(",", "."));
-
-  // Dernier recours : interpréter la durée déjà normalisée affichée par le site.
-  const formatted = formatDuration(value).toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const formattedHours = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\b/);
-  const formattedMinutes = formatted.match(/(\d+)\s*(?:m|min|minute|minutes)\b/);
-  if (formattedHours || formattedMinutes) {
-    return (formattedHours ? Number(formattedHours[1].replace(",", ".")) * 60 : 0) +
-      (formattedMinutes ? Number(formattedMinutes[1]) : 0);
-  }
-
+  // Dernier recours : convertir la valeur formatée partagée avec les cartes.
+  const formatted = formatDuration(value).toLowerCase().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "").trim();
+  const fallbackRange = formatted.match(/^(\d+)\s*[–-]\s*(\d+)\s*min$/);
+  if (fallbackRange) return Number(fallbackRange[2]);
+  const fallback = formatted.match(/^(\d+)\s*min$/);
+  if (fallback) return Number(fallback[1]);
   return null;
 }
+
 function formatPrice(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "Non indiqué";
   return new Intl.NumberFormat("fr-FR", {
