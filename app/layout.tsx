@@ -1,8 +1,9 @@
-
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Footer from "./Footer";
 import "./globals.css";
+
+const siteUrl = "https://chatperlipopette-nine.vercel.app";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,11 +16,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chat'Perlipopette | Location de jeux de société",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Chat’Perlipopette | Location de jeux de société à Toulouse",
+    template: "%s | Chat’Perlipopette",
+  },
   description:
-    "Découvrez et louez des jeux de société avec Chat'Perlipopette.",
+    "Louez des jeux de société avec Chat’Perlipopette : un catalogue de centaines de jeux pour vos soirées, week-ends et événements dans le secteur de Toulouse et en Haute-Garonne.",
+  applicationName: "Chat’Perlipopette",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: siteUrl,
+    siteName: "Chat’Perlipopette",
+    title: "Chat’Perlipopette | Location de jeux de société à Toulouse",
+    description:
+      "Découvrez et louez des jeux de société pour vos soirées, week-ends et événements autour de Toulouse.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
   verification: {
-    google:"2LoZ38vIMfSQqvj3e4ahmBGGCh-U8e_saH3gk1TWPsk" />,
+    google: "2LoZ38vIMfSQqvj3e4ahmBGGCh-U8e_saH3gk1TWPsk",
   },
 };
 
