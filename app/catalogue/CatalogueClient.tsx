@@ -137,8 +137,8 @@ function durationInMinutes(value: string | null | undefined): number | null {
     return /^(h|hr|hrs|heure|heures)$/.test(unit) ? n * 60 : n;
   };
 
-  // Plages comme « 30 min–1 h », « 30-60 min » ou « 0,5 à 1 heure ».
-  const range = raw.match(/(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?/);
+  // La durée de la fiche est la source de vérité : on analyse toute la valeur.
+  const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
   if (range) {
     const unit1 = range[2] || range[4] || "";
     const unit2 = range[4] || range[2] || "";
