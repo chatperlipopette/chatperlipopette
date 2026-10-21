@@ -125,16 +125,41 @@ function GameCover({ game }: { game: Game }) {
 }
 
 function durationInMinutes(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const text = normalize(value);
-  const hourMatch = text.match(/(\d+(?:[.,]\d+)?)\s*h\b/);
-  const minuteMatch = text.match(/(\d+)\s*(?:min|minute|minutes)\b/);
-  if (hourMatch || minuteMatch) {
-    return (hourMatch ? Number(hourMatch[1].replace(",", ".")) * 60 : 0) +
-      (minuteMatch ? Number(minuteMatch[1]) : 0);
+  if (!value?.trim()) return null;
+
+  // Use the same duration normalization as the game cards (e.g. "1h30" -> "1 h 30 min").
+  const formatted = formatDuration(value).toLowerCase().trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Handle a range conservatively by using its longest stated duration,
+  // so a long game is never shown in a shorter-duration filter.
+  const range = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures|min|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|minute|minutes)?/);
+  if (range) {
+    const unit = range[3] || range[2] && /h|heure|hr/.test(formatted) ? "h" : "";
+    const first = Number(range[1].replace(",", "."));
+    const second = Number(range[2].replace(",", "."));
+    const hasHours = /\b(h|hr|hrs|heure|heures)\b/.test(formatted);
+    return Math.max(first, second) * (hasHours ? 60 : 1);
   }
-  const numberMatch = text.match(/\d+/);
-  return numberMatch ? Number(numberMatch[0]) : null;
+
+  const colon = formatted.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (colon && Number(colon[2]) < 60) {
+    return Number(colon[1]) * 60 + Number(colon[2]);
+  }
+
+  const hours = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\b/);
+  const minutes = formatted.match(/(\d+)\s*(?:m|min|minute|minutes)\b/);
+  if (hours || minutes) {
+    return (hours ? Number(hours[1].replace(",", ".")) * 60 : 0) +
+      (minutes ? Number(minutes[1]) : 0);
+  }
+
+  // A bare number is interpreted as minutes, matching the spreadsheet convention.
+  if (/^\d+(?:[.,]\d+)?$/.test(formatted)) {
+    return Number(formatted.replace(",", "."));
+  }
+
+  return null;
 }
 
 function formatPrice(value: number | null): string {
