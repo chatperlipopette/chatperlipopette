@@ -43,48 +43,38 @@ export function formatDuration(value: unknown): string {
   const raw = clean(value);
   if (!raw) return "";
 
-  const normalized = raw
-    .toLowerCase()
-    .normalize("NFD")
+  const normalized = raw.toLowerCase().normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/\s+/g, " ").trim();
 
-  const formatMinutes = (total: number): string => {
-    if (!Number.isFinite(total) || total < 0) return raw;
-    const minutes = Math.round(total);
-    const hours = Math.floor(minutes / 60);
-    const remainder = minutes % 60;
-    if (hours === 0) return `${minutes} min`;
-    return remainder === 0 ? `${hours} h` : `${hours} h ${remainder} min`;
+  const formatMinutes = (total: number): string =>
+    Number.isFinite(total) && total >= 0 ? `${Math.round(total)} min` : raw;
+  const toMinutes = (amount: string, unit = "") => {
+    const number = Number(amount.replace(",", "."));
+    return /^(h|heure|heures|hr|hrs)$/.test(unit) ? number * 60 : number;
   };
 
-  // Formats comme 1h30, 1 h 30 min, 2 heures ou 1.5 h.
-  const hourMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|heure|heures|hr|hrs)(?:\s*(\d+)\s*(?:m|min|minute|minutes)?)?$/);
-  if (hourMatch) {
-    const hours = Number(hourMatch[1].replace(",", "."));
-    const minutes = Number(hourMatch[2] || 0);
-    return formatMinutes(hours * 60 + minutes);
+  // Une plage devient par exemple « 30–60 min ».
+  const range = normalized.match(/(\d+(?:[.,]\d+)?)\s*(h|heure|heures|hr|hrs|min|m|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|heure|heures|hr|hrs|min|m|minute|minutes)?/);
+  if (range) {
+    const firstUnit = range[2] || range[4] || "";
+    const secondUnit = range[4] || range[2] || "";
+    return `${Math.round(toMinutes(range[1], firstUnit))}–${Math.round(toMinutes(range[3], secondUnit))} min`;
   }
 
-  // Formats comme 45 min, 90 minutes.
-  const minuteMatch = normalized.match(/^(\d+)\s*(?:m|min|minute|minutes)$/);
-  if (minuteMatch) return formatMinutes(Number(minuteMatch[1]));
+  // Formats comme 1h30, 1 h 30 min ou 1,5 h.
+  const hourMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|heure|heures|hr|hrs)(?:\s*(\d+)\s*(?:m|min|minute|minutes)?)?$/);
+  if (hourMatch) {
+    return formatMinutes(Number(hourMatch[1].replace(",", ".")) * 60 + Number(hourMatch[2] || 0));
+  }
 
-  // Un nombre seul dans la colonne Durée est considéré comme un nombre de minutes.
+  const minuteMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*(?:m|min|minute|minutes)$/);
+  if (minuteMatch) return formatMinutes(Number(minuteMatch[1].replace(",", ".")));
+
   if (/^\d+(?:[.,]\d+)?$/.test(normalized)) {
     return formatMinutes(Number(normalized.replace(",", ".")));
   }
 
-  // Pour les plages ou formulations plus complexes, conserver le texte déjà saisi
-  // s'il précise son unité, plutôt que de risquer une conversion incorrecte.
-  if (/(?:\bmin(?:ute)?s?\b|\bh(?:eure)?s?\b|\bheures?\b)/.test(normalized)) {
-    return raw
-      .replace(/\bminutes?\b/gi, "min")
-      .replace(/\bheures?\b/gi, "h");
-  }
-
-  // Exemples de formats reconnus en plus : 1:30 signifie 1 h 30.
   const colonMatch = normalized.match(/^(\d{1,2}):(\d{1,2})$/);
   if (colonMatch && Number(colonMatch[2]) < 60) {
     return formatMinutes(Number(colonMatch[1]) * 60 + Number(colonMatch[2]));
