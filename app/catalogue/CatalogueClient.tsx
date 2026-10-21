@@ -127,40 +127,37 @@ function GameCover({ game }: { game: Game }) {
 function durationInMinutes(value: string | null | undefined): number | null {
   if (!value?.trim()) return null;
 
-  // Use the same duration normalization as the game cards (e.g. "1h30" -> "1 h 30 min").
-  const formatted = formatDuration(value).toLowerCase().trim()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const raw = value.trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
 
-  // Handle a range conservatively by using its longest stated duration,
-  // so a long game is never shown in a shorter-duration filter.
-  const range = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures|min|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|minute|minutes)?/);
+  // A range must use its longest endpoint, including explicit units.
+  const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|–|—|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
   if (range) {
     const first = Number(range[1].replace(",", "."));
-    const second = Number(range[2].replace(",", "."));
-    const hasHours = /\b(h|hr|hrs|heure|heures)\b/.test(formatted);
-    return Math.max(first, second) * (hasHours ? 60 : 1);
+    const second = Number(range[3].replace(",", "."));
+    const firstUnit = range[2] || range[4] || "";
+    const secondUnit = range[4] || range[2] || "";
+    const toMinutes = (n: number, unit: string) => /^(h|hr|hrs|heure|heures)$/.test(unit) ? n * 60 : n;
+    return Math.max(toMinutes(first, firstUnit), toMinutes(second, secondUnit));
   }
 
-  const colon = formatted.match(/^(\d{1,2}):(\d{1,2})$/);
-  if (colon && Number(colon[2]) < 60) {
-    return Number(colon[1]) * 60 + Number(colon[2]);
-  }
-
-  const hours = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\b/);
+  // Use the shared formatter to interpret values like 1h30 and bare numbers consistently.
+  const formatted = formatDuration(value).toLowerCase().trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const hours = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)(?:\b|$)/);
   const minutes = formatted.match(/(\d+)\s*(?:m|min|minute|minutes)\b/);
   if (hours || minutes) {
     return (hours ? Number(hours[1].replace(",", ".")) * 60 : 0) +
       (minutes ? Number(minutes[1]) : 0);
   }
 
-  // A bare number is interpreted as minutes, matching the spreadsheet convention.
   if (/^\d+(?:[.,]\d+)?$/.test(formatted)) {
     return Number(formatted.replace(",", "."));
   }
 
   return null;
 }
-
 function formatPrice(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "Non indiqué";
   return new Intl.NumberFormat("fr-FR", {
