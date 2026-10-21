@@ -128,8 +128,8 @@ function durationInMinutes(value: string | null | undefined): number | null {
   if (!value?.trim()) return null;
 
   const raw = value.trim().toLowerCase()
-    .normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")
-    .replace(/\\s+/g, " ");
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
 
   const toMinutes = (amount: string, unit = "") => {
     const number = Number(amount.replace(",", "."));
@@ -137,7 +137,7 @@ function durationInMinutes(value: string | null | undefined): number | null {
   };
 
   // Pour une plage (ex. 30min-1h), la durée retenue est toujours la borne la plus longue.
-  const range = raw.match(/(\\d+(?:[.,]\\d+)?)\\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\\s*(?:-|–|—|à|a|to)\\s*(\\d+(?:[.,]\\d+)?)\\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?/);
+  const range = raw.match(/(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|–|—|à|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?/);
   if (range) {
     const firstUnit = range[2] || range[4] || "";
     const secondUnit = range[4] || range[2] || "";
@@ -145,22 +145,22 @@ function durationInMinutes(value: string | null | undefined): number | null {
   }
 
   // Durées avec heures et minutes, par exemple 1h30 ou 1 h 30 min.
-  const hourMinute = raw.match(/^(\\d+(?:[.,]\\d+)?)\\s*(?:h|hr|hrs|heure|heures)\\s*(\\d+)\\s*(?:m|min|minute|minutes)?$/);
+  const hourMinute = raw.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\s*(\d+)\s*(?:m|min|minute|minutes)?$/);
   if (hourMinute) return toMinutes(hourMinute[1], "h") + Number(hourMinute[2]);
 
-  const hours = raw.match(/^(\\d+(?:[.,]\\d+)?)\\s*(h|hr|hrs|heure|heures)$/);
+  const hours = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures)$/);
   if (hours) return toMinutes(hours[1], hours[2]);
 
-  const minutes = raw.match(/^(\\d+(?:[.,]\\d+)?)\\s*(m|min|minute|minutes)$/);
+  const minutes = raw.match(/^(\d+(?:[.,]\d+)?)\s*(m|min|minute|minutes)$/);
   if (minutes) return Number(minutes[1].replace(",", "."));
 
   // Un nombre sans unité dans le tableur est considéré comme des minutes.
-  if (/^\\d+(?:[.,]\\d+)?$/.test(raw)) return Number(raw.replace(",", "."));
+  if (/^\d+(?:[.,]\d+)?$/.test(raw)) return Number(raw.replace(",", "."));
 
   // Dernier recours : interpréter la durée déjà normalisée affichée par le site.
-  const formatted = formatDuration(value).toLowerCase().trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
-  const formattedHours = formatted.match(/(\\d+(?:[.,]\\d+)?)\\s*(?:h|hr|hrs|heure|heures)\\b/);
-  const formattedMinutes = formatted.match(/(\\d+)\\s*(?:m|min|minute|minutes)\\b/);
+  const formatted = formatDuration(value).toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const formattedHours = formatted.match(/(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\b/);
+  const formattedMinutes = formatted.match(/(\d+)\s*(?:m|min|minute|minutes)\b/);
   if (formattedHours || formattedMinutes) {
     return (formattedHours ? Number(formattedHours[1].replace(",", ".")) * 60 : 0) +
       (formattedMinutes ? Number(formattedMinutes[1]) : 0);
