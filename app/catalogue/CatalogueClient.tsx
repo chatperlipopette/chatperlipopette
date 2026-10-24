@@ -142,6 +142,8 @@ function durationInMinutes(value: string | null | undefined): number | null {
   if (range) {
     const unit1 = range[2] || range[4] || "";
     const unit2 = range[4] || range[2] || "";
+    // Pour une plage, retenir la borne haute afin de ne pas classer à tort
+    // un jeu pouvant durer 30 à 60 minutes dans le filtre « moins de 15 min ».
     return Math.max(toMinutes(range[1], unit1), toMinutes(range[3], unit2));
   }
 
@@ -231,7 +233,7 @@ export default function CatalogueClient({ games }: Props) {
       const matchesDuration =
         durationFilter === "tous" ||
         (minutes !== null && (
-          (durationFilter === "15" && minutes <= 15) ||
+          (durationFilter === "15" && minutes < 15) ||
           (durationFilter === "15-30" && minutes >= 15 && minutes <= 30) ||
           (durationFilter === "30-60" && minutes > 30 && minutes <= 60) ||
           (durationFilter === "60+" && minutes > 60)
