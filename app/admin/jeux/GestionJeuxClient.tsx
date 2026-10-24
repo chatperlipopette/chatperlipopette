@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type Game = {
   code_barre: string;
@@ -27,32 +27,24 @@ export default function GestionJeuxClient({ games }: { games: Game[] }) {
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
-  const visibleGames = useMemo(() => {
+  const visibleGames = (() => {
     const normalize = (value: unknown) => String(value ?? "")
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[\\u0300-\\u036f]/g, "")
       .toLocaleLowerCase("fr")
-      .trim()
-      .replace(/\s+/g, " ");
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
     const q = normalize(search);
     if (!q) return items;
     return items.filter((game) => {
-      // Cherche dans tous les champs descriptifs, pas seulement le nom et le code.
-      const searchable = [
-        game.nom,
-        game.code_barre,
-        game.editeur,
-        game.description,
-        game.categories,
-        game.duree,
-        game.age,
-        game.nombre_min,
-        game.nombre_max,
-        game.annee,
-      ].map(normalize).join(" ");
+      const searchable = normalize([
+        game.nom, game.code_barre, game.editeur, game.description,
+        game.categories, game.duree, game.age, game.nombre_min,
+        game.nombre_max, game.annee
+      ].join(" "));
       return searchable.includes(q);
     });
-  }, [items, search]);
+  })();
 
   function updatePrice(code: string, field: "prix_location" | "prix_caution", value: string) {
     const number = value.trim() === "" ? null : Number(value.replace(",", "."));
