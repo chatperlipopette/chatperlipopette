@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
+import { isAdminSession } from "@/lib/admin-auth";
+import { getGames } from "@/lib/games";
+import GestionJeuxClient from "./GestionJeuxClient";
 
-// Le gestionnaire des jeux (édition des fiches, prix et disponibilité)
-// est intégré à la page catalogue d’administration.
-export default function AdminJeuxPage() {
-  redirect("/admin/catalogue");
+export const dynamic = "force-dynamic";
+
+export default async function AdminJeuxPage() {
+  if (!(await isAdminSession())) redirect("/admin/catalogue/connexion");
+  const games = await getGames();
+  return <GestionJeuxClient games={games} />;
 }
