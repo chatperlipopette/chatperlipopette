@@ -137,13 +137,12 @@ function durationInMinutes(value: string | null | undefined): number | null {
     return /^(h|hr|hrs|heure|heures)$/.test(unit) ? n * 60 : n;
   };
 
-  // La durée de la fiche est la source de vérité : on analyse toute la valeur.
-  const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|a|to)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
+  // Accepte les formats courants : « 10-15 », « 10 à 15 min », « 10/15 min ».
+  const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|a|to|\/)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
   if (range) {
     const unit1 = range[2] || range[4] || "";
     const unit2 = range[4] || range[2] || "";
-    // Pour une plage, retenir la borne haute afin de ne pas classer à tort
-    // un jeu pouvant durer 30 à 60 minutes dans le filtre « moins de 15 min ».
+    // Retenir la borne haute pour ne pas classer à tort un jeu de 30 à 60 min en « moins de 15 min ».
     return Math.max(toMinutes(range[1], unit1), toMinutes(range[3], unit2));
   }
 
