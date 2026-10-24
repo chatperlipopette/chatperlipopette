@@ -36,11 +36,22 @@ export default function GestionJeuxClient({ games }: { games: Game[] }) {
       .replace(/\s+/g, " ");
     const q = normalize(search);
     if (!q) return items;
-    return items.filter((game) =>
-      normalize(game.nom).includes(q) ||
-      normalize(game.code_barre).includes(q) ||
-      normalize(game.editeur).includes(q)
-    );
+    return items.filter((game) => {
+      // Cherche dans tous les champs descriptifs, pas seulement le nom et le code.
+      const searchable = [
+        game.nom,
+        game.code_barre,
+        game.editeur,
+        game.description,
+        game.categories,
+        game.duree,
+        game.age,
+        game.nombre_min,
+        game.nombre_max,
+        game.annee,
+      ].map(normalize).join(" ");
+      return searchable.includes(q);
+    });
   }, [items, search]);
 
   function updatePrice(code: string, field: "prix_location" | "prix_caution", value: string) {
