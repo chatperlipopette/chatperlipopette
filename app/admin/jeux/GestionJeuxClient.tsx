@@ -96,10 +96,10 @@ export default function GestionJeuxClient({ games }: { games: Game[] }) {
         <p className="mb-3 text-sm text-gray-600">{visibleGames.length} jeu(x) affiché(s) sur {items.length}</p>
 
         <div className="space-y-3">
-          {visibleGames.map((game) => {
+          {visibleGames.map((game, index) => {
             const key = game.code_barre || game.nom;
             return (
-              <section key={key} className="grid gap-4 rounded-2xl border border-[#EADCB9] bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_150px_150px_130px] md:items-end">
+              <section key={`${key}-${index}`} className="grid gap-4 rounded-2xl border border-[#EADCB9] bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_150px_150px_130px] md:items-end">
                 <div className="min-w-0">
                   <h2 className="break-words text-lg font-black text-gray-900">{game.nom}</h2>
                   {game.code_barre && <p className="text-xs text-gray-500">Code : {game.code_barre}</p>}
