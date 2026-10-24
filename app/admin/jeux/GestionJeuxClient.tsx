@@ -30,10 +30,10 @@ export default function GestionJeuxClient({ games }: { games: Game[] }) {
   const visibleGames = useMemo(() => {
     const normalize = (value: unknown) => String(value ?? "")
       .normalize("NFD")
-      .replace(/[\\u0300-\\u036f]/g, "")
+      .replace(/[\u0300-\u036f]/g, "")
       .toLocaleLowerCase("fr")
       .trim()
-      .replace(/\\s+/g, " ");
+      .replace(/\s+/g, " ");
     const q = normalize(search);
     if (!q) return items;
     return items.filter((game) =>
