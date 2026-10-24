@@ -21,7 +21,7 @@ type Reservation = { game_code: string; date_debut: string; date_retour: string;
 function normalizeFlagKey(value: unknown): string {
   return String(value ?? "")
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("fr")
     .replace(/[^a-z0-9]/g, "");
 }
