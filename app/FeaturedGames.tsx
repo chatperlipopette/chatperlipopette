@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { getGames, type Game } from "../lib/games";
-import { getCatalogueFlags } from "../lib/catalogue-flags";
+import { getCatalogueFlags, normalizeCatalogueKey } from "../lib/catalogue-flags";
 
 export default async function FeaturedGames() {
   let games: Game[] = [];
   try {
     const [sourceGames, flags] = await Promise.all([getGames(), getCatalogueFlags()]);
     games = sourceGames.map((game) => {
-      const savedFlags = flags.get(game.code_barre || game.nom);
+      const savedFlags = flags.get(normalizeCatalogueKey(game.code_barre || game.nom));
       return { ...game, nouveaute: savedFlags?.nouveaute ?? false, coup_de_coeur: savedFlags?.coup_de_coeur ?? false };
     });
   } catch (error) {
