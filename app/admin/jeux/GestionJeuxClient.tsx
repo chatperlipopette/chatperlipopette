@@ -28,11 +28,18 @@ export default function GestionJeuxClient({ games }: { games: Game[] }) {
   const [message, setMessage] = useState("");
 
   const visibleGames = useMemo(() => {
-    const q = search.trim().toLocaleLowerCase("fr");
+    const normalize = (value: unknown) => String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLocaleLowerCase("fr")
+      .trim()
+      .replace(/\\s+/g, " ");
+    const q = normalize(search);
     if (!q) return items;
     return items.filter((game) =>
-      game.nom.toLocaleLowerCase("fr").includes(q) ||
-      (game.code_barre || "").toLocaleLowerCase("fr").includes(q)
+      normalize(game.nom).includes(q) ||
+      normalize(game.code_barre).includes(q) ||
+      normalize(game.editeur).includes(q)
     );
   }, [items, search]);
 
