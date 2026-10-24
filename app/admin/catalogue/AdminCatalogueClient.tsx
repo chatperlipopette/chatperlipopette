@@ -169,11 +169,20 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
     setSaving(true);
     setMessage("");
     try {
-      const payload = games.map((game) => ({
-        game_code: game.code_barre || game.nom,
-        nouveaute: flags[normalizeFlagKey(game.code_barre || game.nom)]?.nouveaute ?? false,
-        coup_de_coeur: flags[normalizeFlagKey(game.code_barre || game.nom)]?.coup_de_coeur ?? false,
-      }));
+      // Utiliser la même clé normalisée à l'enregistrement et à la lecture publique.
+      // Cela évite qu'un espace, un accent ou une différence de casse fasse perdre un coup de cœur.
+      const payloadByKey = new Map<string, { game_code: string; nouveaute: boolean; coup_de_coeur: boolean }>();
+      games.forEach((game) => {
+        const rawKey = game.code_barre || game.nom;
+        const key = normalizeFlagKey(rawKey);
+        if (!key) return;
+        payloadByKey.set(key, {
+          game_code: key,
+          nouveaute: flags[key]?.nouveaute ?? false,
+          coup_de_coeur: flags[key]?.coup_de_coeur ?? false,
+        });
+      });
+      const payload = Array.from(payloadByKey.values());
       const response = await fetch("/api/admin/catalogue", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
