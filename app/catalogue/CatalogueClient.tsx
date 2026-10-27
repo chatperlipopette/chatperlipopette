@@ -425,10 +425,9 @@ export default function CatalogueClient({ games }: Props) {
           {Array.from(
             new Set(
               filteredGames.map((game) => {
-                // Un jeu avec plusieurs catégories ne doit apparaître qu'une seule fois.
-                // Si une catégorie précise est sélectionnée, regrouper les résultats sous celle-ci.
-                if (category !== "tous") return category;
-                return (game.categories || "autres").split(",").map((item) => item.trim()).filter(Boolean)[0] || "autres";
+                // Normaliser avant le Set évite les groupes doublons ("Famille"/"famille").
+                if (category !== "tous") return normalize(category);
+                return normalize((game.categories || "autres").split(",").map((item) => item.trim()).filter(Boolean)[0] || "autres");
               })
             )
           ).map((group) => {
