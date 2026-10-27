@@ -103,6 +103,8 @@ function GameCover({ game }: { game: Game }) {
           loading="lazy"
           className="h-full w-full object-contain"
           onError={() => {
+            // Ne jamais laisser l'icône d'image cassée apparaître : tenter le secours,
+            // puis afficher le dé si aucune couverture exploitable n'est trouvée.
             if (primaryImageUrl && !imageFailed) {
               setImageFailed(true);
             } else {
@@ -422,13 +424,21 @@ export default function CatalogueClient({ games }: Props) {
         <div className="space-y-10">
           {Array.from(
             new Set(
-              filteredGames.flatMap((game) =>
-                (game.categories || "autres").split(",").map((item) => item.trim()).filter(Boolean)
-              )
+              filteredGames.map((game) => {
+                // Un jeu avec plusieurs catégories ne doit apparaître qu'une seule fois.
+                // Si une catégorie précise est sélectionnée, regrouper les résultats sous celle-ci.
+                if (category !== "tous") return category;
+                return (game.categories || "autres").split(",").map((item) => item.trim()).filter(Boolean)[0] || "autres";
+              })
             )
           ).map((group) => {
             const groupedGames = filteredGames
-              .filter((game) => (game.categories || "autres").split(",").map((item) => item.trim()).includes(group))
+              .filter((game) => {
+                const gameCategories = (game.categories || "autres").split(",").map((item) => normalize(item)).filter(Boolean);
+                if (category !== "tous") return gameCategories.includes(normalize(group));
+                const firstCategory = gameCategories[0] || "autres";
+                return firstCategory === normalize(group);
+              })
               .sort((a, b) => {
                 const yearA = a.annee && a.annee > 0 ? a.annee : Number.MAX_SAFE_INTEGER;
                 const yearB = b.annee && b.annee > 0 ? b.annee : Number.MAX_SAFE_INTEGER;
