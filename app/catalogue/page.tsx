@@ -12,8 +12,10 @@ export default async function Catalogue() {
       const savedFlags = flags.get(key);
       return {
         ...game,
-        nouveaute: savedFlags?.nouveaute === true,
-        coup_de_coeur: savedFlags?.coup_de_coeur === true,
+        // Les réglages Supabase priment lorsqu'une ligne existe. En l'absence
+        // de réglage enregistré, conserver les valeurs déjà présentes dans la source.
+        nouveaute: savedFlags ? savedFlags.nouveaute : game.nouveaute === true,
+        coup_de_coeur: savedFlags ? savedFlags.coup_de_coeur : game.coup_de_coeur === true,
       };
     });
 
