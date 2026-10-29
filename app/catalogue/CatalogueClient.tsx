@@ -139,13 +139,12 @@ function durationInMinutes(value: string | null | undefined): number | null {
     return /^(h|hr|hrs|heure|heures)$/.test(unit) ? n * 60 : n;
   };
 
-  // Accepte les formats courants : « 10-15 », « 10 à 15 min », « 10/15 min ».
   const range = raw.match(/^(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?\s*(?:-|a|to|\/)\s*(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|heure|heures|min|m|minute|minutes)?$/);
   if (range) {
-    const unit1 = range[2] || range[4] || "";
-    const unit2 = range[4] || range[2] || "";
-    // Retenir la borne haute pour ne pas classer à tort un jeu de 30 à 60 min en « moins de 15 min ».
-    return Math.max(toMinutes(range[1], unit1), toMinutes(range[3], unit2));
+    const firstUnit = range[2] || range[4] || "";
+    const secondUnit = range[4] || range[2] || "";
+    // Pour une plage, prendre la borne haute pour éviter de classer un jeu trop long dans une tranche courte.
+    return Math.max(toMinutes(range[1], firstUnit), toMinutes(range[3], secondUnit));
   }
 
   const combined = raw.match(/^(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|heure|heures)\s*(\d+)\s*(?:m|min|minute|minutes)?$/);
@@ -156,7 +155,7 @@ function durationInMinutes(value: string | null | undefined): number | null {
 
   const formatted = formatDuration(value).toLowerCase().normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "").replace(/[‐‑‒–—―−]/g, "-").trim();
-  const formattedRange = formatted.match(/^(\d+)\s*-\s*(\d+)\s*min$/);
+  const formattedRange = formatted.match(/^(\d+)\s*[–-]\s*(\d+)\s*min$/);
   if (formattedRange) return Number(formattedRange[2]);
   const formattedSingle = formatted.match(/^(\d+)\s*min$/);
   if (formattedSingle) return Number(formattedSingle[1]);
@@ -226,9 +225,14 @@ export default function CatalogueClient({ games }: Props) {
         (specialFilter === "nouveautes" && game.nouveaute === true) ||
         (specialFilter === "coups-de-coeur" && game.coup_de_coeur === true);
 
+      // L'âge est l'âge minimum conseillé. Ne pas confondre valeurs absentes/invalides et âge numérique.
+      const gameAge =
+        typeof game.age === "number" && Number.isFinite(game.age) && game.age >= 0
+          ? game.age
+          : null;
       const matchesAge =
         ageFilter === "tous" ||
-        (game.age !== null && game.age >= Number(ageFilter));
+        (gameAge !== null && gameAge >= Number(ageFilter));
 
       const minutes = durationInMinutes(game.duree);
       const matchesDuration =
