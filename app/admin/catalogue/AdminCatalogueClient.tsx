@@ -49,8 +49,14 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
         if (!response.ok) throw new Error(result.error || "Chargement impossible.");
         if (active) {
           const next: Record<string, { nouveaute: boolean; coup_de_coeur: boolean }> = {};
+          const canonicalKeys = new Set<string>();
           (result.flags as Flag[]).forEach((flag) => {
-            next[normalizeFlagKey(flag.game_code)] = { nouveaute: flag.nouveaute === true, coup_de_coeur: flag.coup_de_coeur === true };
+            const key = normalizeFlagKey(flag.game_code);
+            if (!key) return;
+            const isCanonical = flag.game_code === key;
+            if (canonicalKeys.has(key) && !isCanonical) return;
+            next[key] = { nouveaute: flag.nouveaute === true, coup_de_coeur: flag.coup_de_coeur === true };
+            if (isCanonical) canonicalKeys.add(key);
           });
           setFlags(next);
         }
