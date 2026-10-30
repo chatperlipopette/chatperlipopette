@@ -383,7 +383,7 @@ export async function getGames(): Promise<Game[]> {
     const rawCode = get(codeBarreIndex);
     const gameKey = (rawCode || nom)
       .normalize("NFD")
-      .replace(/[\\u0300-\\u036f]/g, "")
+      .replace(/[\u0300-\u036f]/g, "")
       .toLocaleLowerCase("fr")
       .replace(/[^a-z0-9]/g, "");
     if (gameKey && seenGameKeys.has(gameKey)) {
@@ -447,7 +447,7 @@ export async function getGames(): Promise<Game[]> {
     const rawKey = game.code_barre || game.nom;
     const key = String(rawKey || "")
       .normalize("NFD")
-      .replace(/[\\u0300-\\u036f]/g, "")
+      .replace(/[\u0300-\u036f]/g, "")
       .toLocaleLowerCase("fr")
       .replace(/[^a-z0-9]/g, "");
     if (!key) {
