@@ -368,6 +368,10 @@ export async function getGames(): Promise<Game[]> {
   const coupDeCoeurIndex = findColumn(headers, "coup_de_coeur", "coup_de_coeur", "favori", "favoris", "coup_de_coeur_site");
 
   const games: Game[] = [];
+  // Certaines lignes du tableur sont dupliquées (même code-barres).
+  // On ne conserve qu'une fiche par identifiant pour éviter les cartes
+  // répétées et les clés React identiques dans l'administration et le catalogue.
+  const seenGameKeys = new Set<string>();
 
   for (const row of rows.slice(1)) {
     const get = (index: number): string => {
@@ -376,6 +380,17 @@ export async function getGames(): Promise<Game[]> {
     };
 
     const nom = get(nomIndex) || get(codeBarreIndex) || "Jeu sans nom";
+    const rawCode = get(codeBarreIndex);
+    const gameKey = (rawCode || nom)
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLocaleLowerCase("fr")
+      .replace(/[^a-z0-9]/g, "");
+    if (gameKey && seenGameKeys.has(gameKey)) {
+      console.warn("Ligne de jeu dupliquée ignorée :", rawCode || nom);
+      continue;
+    }
+    if (gameKey) seenGameKeys.add(gameKey);
 
     games.push({
       code_barre: get(codeBarreIndex),
