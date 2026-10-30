@@ -12,10 +12,11 @@ export default async function Catalogue() {
       const savedFlags = flags.get(key);
       return {
         ...game,
-        // Les réglages Supabase priment lorsqu'une ligne existe. En l'absence
-        // de réglage enregistré, conserver les valeurs déjà présentes dans la source.
+        // Les coups de cœur sont exclusivement ceux cochés dans l'administration
+        // (table Supabase). Une valeur provenant du CSV ou d'une ancienne fiche
+        // ne doit jamais faire apparaître un jeu classique dans cette sélection.
         nouveaute: savedFlags ? savedFlags.nouveaute : game.nouveaute === true,
-        coup_de_coeur: savedFlags ? savedFlags.coup_de_coeur : game.coup_de_coeur === true,
+        coup_de_coeur: savedFlags?.coup_de_coeur === true,
       };
     });
 
