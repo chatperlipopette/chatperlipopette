@@ -37,10 +37,20 @@ export async function getCatalogueFlags(): Promise<Map<string, CatalogueFlags>> 
       nouveaute: boolean;
       coup_de_coeur: boolean;
     }>;
-    return new Map(data.map((row) => [
-      normalizeCatalogueKey(row.game_code),
-      { nouveaute: row.nouveaute === true, coup_de_coeur: row.coup_de_coeur === true },
-    ]));
+    // Les anciennes lignes pouvaient contenir le code avec espaces/accents,
+    // tandis que les nouvelles sauvegardes utilisent la clé déjà normalisée.
+    // En cas de doublon, la clé normalisée doit toujours gagner (même si elle vaut false).
+    const flags = new Map<string, CatalogueFlags>();
+    const canonicalKeys = new Set<string>();
+    for (const row of data) {
+      const key = normalizeCatalogueKey(row.game_code);
+      if (!key) continue;
+      const isCanonical = row.game_code === key;
+      if (canonicalKeys.has(key) && !isCanonical) continue;
+      flags.set(key, { nouveaute: row.nouveaute === true, coup_de_coeur: row.coup_de_coeur === true });
+      if (isCanonical) canonicalKeys.add(key);
+    }
+    return flags;
   } catch (error) {
     console.error("Lecture des badges impossible :", error);
     return new Map();
