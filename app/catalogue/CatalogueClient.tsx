@@ -27,6 +27,9 @@ type Props = {
   games: Game[];
 };
 
+type CartItem = { code_barre: string; nom: string; prix_location: number; prix_caution: number };
+const CART_KEY = "chatperlipopette-panier-v1";
+
 const CATEGORIES = [
   { value: "cooperatif", label: "🤝 Coopératif" },
   { value: "ambiance", label: "😂 Ambiance" },
@@ -180,6 +183,21 @@ export default function CatalogueClient({ games }: Props) {
   const [durationFilter, setDurationFilter] = useState("tous");
   const [playersFilter, setPlayersFilter] = useState("tous");
   const [maxPriceFilter, setMaxPriceFilter] = useState("tous");
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  useEffect(() => {
+    try { setCart(JSON.parse(localStorage.getItem(CART_KEY) || "[]")); } catch { setCart([]); }
+  }, []);
+
+  function addToCart(game: Game) {
+    const code = game.code_barre || game.nom;
+    const item: CartItem = { code_barre: code, nom: game.nom, prix_location: Number(game.prix_location || 0), prix_caution: Number(game.prix_caution || 0) };
+    setCart((current) => {
+      const next = current.some((entry) => entry.code_barre === code) ? current : [...current, item];
+      localStorage.setItem(CART_KEY, JSON.stringify(next));
+      return next;
+    });
+  }
 
   const filteredGames = useMemo(() => {
     const searchTerms = normalize(search).split(" ").filter(Boolean);
@@ -267,6 +285,7 @@ export default function CatalogueClient({ games }: Props) {
 
   return (
     <section>
+      <div className="mb-5 flex justify-end"><Link href="/panier" className="rounded-xl bg-[#24211B] px-5 py-3 font-bold text-white">🛒 Mon panier ({cart.length})</Link></div>
       <div className="mb-8 rounded-3xl border border-[#EADCB9] bg-white p-5 shadow-sm md:p-7">
         <label htmlFor="game-search" className="mb-2 block text-sm font-bold text-gray-700">
           Rechercher un jeu
@@ -486,12 +505,14 @@ export default function CatalogueClient({ games }: Props) {
                         <p className="font-bold text-gray-800">{formatPrice(game.prix_caution)}</p>
                       </div>
                     </div>
-                    <Link
-                      href={`/catalogue/${encodeURIComponent(gameId)}`}
-                      className="mt-4 block rounded-xl bg-[#E8B223] px-4 py-3 text-center font-extrabold text-black transition hover:bg-[#D6A014]"
-                    >
-                      Voir le jeu
-                    </Link>
+                    <div className="mt-4 grid gap-2">
+                      <Link href={`/catalogue/${encodeURIComponent(gameId)}`} className="block rounded-xl border border-[#E8B223] px-4 py-3 text-center font-bold text-gray-900 hover:bg-[#FFF8E8]">
+                        Voir le jeu
+                      </Link>
+                      <button type="button" onClick={() => addToCart(game)} disabled={cart.some((item) => item.code_barre === (game.code_barre || game.nom))} className="rounded-xl bg-[#E8B223] px-4 py-3 text-center font-extrabold text-black hover:bg-[#D6A014] disabled:opacity-60">
+                        {cart.some((item) => item.code_barre === (game.code_barre || game.nom)) ? "✓ Déjà dans le panier" : "🛒 Ajouter au panier"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </article>
