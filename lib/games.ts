@@ -437,7 +437,27 @@ export async function getGames(): Promise<Game[]> {
     });
   }
 
-  console.log(`Catalogue chargé : ${games.length} jeux`);
+  console.log(`Catalogue chargé depuis le tableur : ${games.length} jeux`);
 
-  return await applyAdminGameEdits(games);
+  const mergedGames = await applyAdminGameEdits(games);
+  // Dernière protection après fusion des fiches administrateur :
+  // une seule fiche par code-barres normalisé (ou par nom si aucun code).
+  const uniqueGames = new Map<string, Game>();
+  for (const game of mergedGames) {
+    const rawKey = game.code_barre || game.nom;
+    const key = String(rawKey || "")
+      .normalize("NFD")
+      .replace(/[\\u0300-\\u036f]/g, "")
+      .toLocaleLowerCase("fr")
+      .replace(/[^a-z0-9]/g, "");
+    if (!key) {
+      uniqueGames.set(`sans-identifiant-${uniqueGames.size}`, game);
+      continue;
+    }
+    if (!uniqueGames.has(key)) uniqueGames.set(key, game);
+  }
+
+  const result = Array.from(uniqueGames.values());
+  console.log(`Catalogue final : ${result.length} jeux uniques (doublons ignorés : ${mergedGames.length - result.length})`);
+  return result;
 }
