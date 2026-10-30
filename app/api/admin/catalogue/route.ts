@@ -90,7 +90,31 @@ export async function PATCH(request: NextRequest) {
       else if (diagnostic) message = `Supabase (${response.status}) : ${diagnostic.slice(0, 500)}`;
       return NextResponse.json({ error: message }, { status: 502 });
     }
-    return NextResponse.json({ ok: true, count: uniqueItems.length });
+    // Vérifier les valeurs réellement renvoyées par Supabase : une réponse HTTP
+    // réussie ne garantit pas que toutes les lignes attendues ont été écrites.
+    const savedRows = await response.json() as Array<{
+      game_code: string;
+      nouveaute: boolean;
+      coup_de_coeur: boolean;
+    }>;
+    const savedByCode = new Map(savedRows.map((row) => [row.game_code, row]));
+    const missing = uniqueItems.filter((item) => {
+      const saved = savedByCode.get(item.game_code);
+      return !saved || saved.nouveaute !== item.nouveaute || saved.coup_de_coeur !== item.coup_de_coeur;
+    });
+    if (missing.length > 0) {
+      console.error("Vérification après sauvegarde échouée :", {
+        expected: uniqueItems.length,
+        returned: savedRows.length,
+        mismatches: missing.slice(0, 10).map((item) => item.game_code),
+      });
+      return NextResponse.json({
+        error: `Supabase n'a pas confirmé l'enregistrement de ${missing.length} réglage(s). Recharge la page et réessaie.`,
+        saved: savedRows.length,
+        expected: uniqueItems.length,
+      }, { status: 502 });
+    }
+    return NextResponse.json({ ok: true, count: uniqueItems.length, verified: true });
   } catch (error) {
     const diagnostic = readableError(error);
     console.error("Erreur de sauvegarde du catalogue :", diagnostic);
