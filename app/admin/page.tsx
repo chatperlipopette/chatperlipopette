@@ -23,6 +23,10 @@ export default function Admin() {
           <h2 className="text-2xl font-bold">💬 Avis et questions</h2>
           <p className="mt-2">Modérer les avis des jeux et répondre aux questions des visiteurs.</p>
         </Link>
+        <Link href="/admin/partenaires" className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
+          <h2 className="text-2xl font-bold">🤝 Partenaires & avantages</h2>
+          <p className="mt-2">Créer des comptes privés et des codes offrant des locations gratuites ou des réductions.</p>
+        </Link>
         <Link href="/admin/reservations" className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
           <h2 className="text-2xl font-bold">📅 Réservations</h2>
           <p className="mt-2">Voir les locations en cours.</p>
