@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { getGames } from "@/lib/games";
+import { getGames, type Game } from "@/lib/games";
 import { getPartnerById, getPartnerSessionId, getConfig } from "@/lib/partner-access";
 
 export const runtime = "nodejs";
@@ -30,14 +30,14 @@ export async function POST(request: NextRequest) {
     if (requestedCodes.some((code: string) => !code) || new Set(requestedCodes).size !== requestedCodes.length) {
       return NextResponse.json({ error: "Un ou plusieurs identifiants de jeux sont invalides." }, { status: 400 });
     }
-    const games = await getGames();
-    const selected = requestedCodes.map((code: string) => games.find(game => (game.code_barre || game.nom) === code));
+    const games: Game[] = await getGames();
+    const selected: (Game | undefined)[] = requestedCodes.map((code: string) => games.find((game: Game) => (game.code_barre || game.nom) === code));
     if (selected.some(game => !game)) return NextResponse.json({ error: "Un jeu du panier n'existe plus dans le catalogue. Recharge ton panier." }, { status: 400 });
-    const chosen = selected.filter((game): game is NonNullable<typeof game> => Boolean(game));
-    if (chosen.some(game => !Number.isFinite(Number(game.prix_location)) || Number(game.prix_location) < 0)) {
+    const chosen: Game[] = selected.filter((game): game is Game => Boolean(game));
+    if (chosen.some((game: Game) => !Number.isFinite(Number(game.prix_location)) || Number(game.prix_location) < 0)) {
       return NextResponse.json({ error: "Un jeu du panier n'a pas de prix de location valide." }, { status: 400 });
     }
-    const subtotal = Math.round(chosen.reduce((sum, game) => sum + Number(game.prix_location || 0), 0) * days * 100) / 100;
+    const subtotal = Math.round(chosen.reduce((sum: number, game: Game) => sum + Number(game.prix_location || 0), 0) * days * 100) / 100;
     const basketRate = chosen.length >= 3 ? 0.05 : chosen.length === 2 ? 0.02 : 0;
     const basketDiscount = Math.round(subtotal * basketRate * 100) / 100;
     const afterBasket = Math.max(0, subtotal - basketDiscount);
@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     const partnerDiscount = Math.round(afterBasket * partnerRate * 100) / 100;
     const total = Math.max(0, Math.round((afterBasket - partnerDiscount) * 100) / 100);
     const deposit = Math.round(total * 0.3 * 100) / 100;
-    const caution = Math.round(chosen.reduce((sum, game) => sum + Math.max(0, Number(game.prix_caution) || 0), 0) * 100) / 100;
-    const gameNames = chosen.map(game => game.nom).join(", ");
+    const caution = Math.round(chosen.reduce((sum: number, game: Game) => sum + Math.max(0, Number(game.prix_caution) || 0), 0) * 100) / 100;
+    const gameNames = chosen.map((game: Game) => game.nom).join(", ");
 
     if (total === 0) {
       if (partner) await incrementPartnerUsage(partner.id);
