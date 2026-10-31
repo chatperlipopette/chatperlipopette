@@ -14,7 +14,7 @@ function sign(payload: string) {
 }
 export function hashPartnerPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
-  return \`scrypt:\${salt}:\${scryptSync(password, salt, 64).toString("hex")}\`;
+  return `scrypt:${salt}:${scryptSync(password, salt, 64).toString("hex")}`;
 }
 export function verifyPartnerPassword(password: string, stored: string) {
   const [algorithm, salt, expectedHex] = stored.split(":");
@@ -27,14 +27,14 @@ export function verifyPartnerPassword(password: string, stored: string) {
 }
 export function createPartnerCookie(partnerId: string) {
   const expires = String(Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE);
-  const payload = \`\${partnerId}.\${expires}\`;
-  return { value: \`\${payload}.\${sign(payload)}\`, maxAge: COOKIE_MAX_AGE };
+  const payload = `${partnerId}.${expires}`;
+  return { value: `${payload}.${sign(payload)}`, maxAge: COOKIE_MAX_AGE };
 }
 export function verifyPartnerCookie(value?: string) {
   if (!value) return null;
   const [partnerId, expires, supplied, extra] = value.split(".");
   if (!partnerId || !expires || !supplied || extra || !/^\d+$/.test(expires) || Number(expires) <= Math.floor(Date.now() / 1000)) return null;
-  const payload = \`\${partnerId}.\${expires}\`;
+  const payload = `${partnerId}.${expires}`;
   try {
     const a = Buffer.from(sign(payload), "hex");
     const b = Buffer.from(supplied, "hex");
@@ -48,8 +48,8 @@ export async function getPartnerSessionId() {
 export async function getPartnerById(id: string) {
   const config = getConfig();
   if (!config) return null;
-  const response = await fetch(\`\${config.url}/rest/v1/partners?id=eq.\${encodeURIComponent(id)}&select=id,name,username,promo_code,discount_type,discount_percent,active,expires_at,max_uses,usage_count\`, {
-    headers: { apikey: config.key, Authorization: \`Bearer \${config.key}\` }, cache: "no-store",
+  const response = await fetch(`${config.url}/rest/v1/partners?id=eq.${encodeURIComponent(id)}&select=id,name,username,promo_code,discount_type,discount_percent,active,expires_at,max_uses,usage_count`, {
+    headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store",
   });
   if (!response.ok) throw new Error("Impossible de vérifier l'accès partenaire.");
   const rows = await response.json();
