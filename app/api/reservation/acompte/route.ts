@@ -114,11 +114,11 @@ async function createLegacyCheckout(request: NextRequest, amount: number, game: 
   const merchantCode = process.env.SUMUP_MERCHANT_CODE?.trim();
   if (!apiKey || !merchantCode) return NextResponse.json({ error: "Configuration SumUp incomplète dans Vercel." }, { status: 500 });
   const origin = new URL(request.url).origin;
-  const checkoutReference = \`cp-acompte-\${randomUUID()}\`;
+  const checkoutReference = `cp-acompte-${randomUUID()}`;
   const response = await fetch("https://api.sumup.com/v0.1/checkouts", {
     method: "POST",
-    headers: { Authorization: \`Bearer \${apiKey}\`, "Content-Type": "application/json" },
-    body: JSON.stringify({ checkout_reference: checkoutReference, amount: Math.round(amount * 100) / 100, currency: "EUR", merchant_code: merchantCode, description: \`Chat'Perlipopette - acompte location - \${game.slice(0, 80)}\`, redirect_url: \`\${origin}/reservation/retour?reference=\${encodeURIComponent(checkoutReference)}\`, hosted_checkout: { enabled: true } }),
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ checkout_reference: checkoutReference, amount: Math.round(amount * 100) / 100, currency: "EUR", merchant_code: merchantCode, description: `Chat'Perlipopette - acompte location - ${game.slice(0, 80)}`, redirect_url: `${origin}/reservation/retour?reference=${encodeURIComponent(checkoutReference)}`, hosted_checkout: { enabled: true } }),
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));
