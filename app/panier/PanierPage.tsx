@@ -160,6 +160,7 @@ export default function PanierPage() {
 
             <section className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
               <h2 className="text-xl font-black">🤝 Avantage partenaire</h2>
+              <Link href="/partenaire/connexion" className="mt-2 inline-block text-sm font-bold text-[#806000] underline">Accéder à mon espace partenaire sans passer par l’administration</Link>
               {partner.active ? (
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-green-50 p-4"><div><p className="font-bold text-green-800">Accès activé : {partner.name}</p><p className="text-sm text-green-700">{partner.discountType === "free" ? "Location offerte" : `Réduction supplémentaire de ${partner.discountPercent}%`}</p></div><button type="button" onClick={() => void deactivatePartner()} className="rounded-lg border border-green-300 px-3 py-2 text-sm font-bold text-green-800">Désactiver</button></div>
               ) : (
