@@ -22,7 +22,7 @@ export function promotionApplies(promotion: SitePromotion, categories: string | 
 export function promotionPrice(price: number, promotion: SitePromotion): number {
   const raw = String(promotion.discount || "").trim().replace(",", ".");
   const percent = raw.match(/(-?\d+(?:\.\d+)?)\s*%/);
-  const euro = raw.match(/-\s*(\d+(?:\.\d+)?)\s*(?:€|eur|euro|euros)\b?/i);
+  const euro = raw.match(/-?\\s*(\\d+(?:\\.\\d+)?)\\s*(?:€|eur|euros?)\\s*$/i);
   let reduction = 0;
   if (percent) reduction = price * Math.min(100, Math.max(0, Math.abs(Number(percent[1])))) / 100;
   else if (euro) reduction = Math.min(price, Math.max(0, Number(euro[1])));
