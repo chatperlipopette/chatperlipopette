@@ -27,7 +27,7 @@ export default function Home() {
             />
             <div>
               <h1 className="text-2xl font-black sm:text-3xl">Chat'Perlipopette</h1>
-              <p className="text-sm font-medium">Location de jeux de société</p>
+              <p className="text-sm font-medium">Ronronnez de plaisir, jouez sans limite !</p>
             </div>
           </Link>
           <nav aria-label="Navigation principale" className="flex items-center gap-6 font-bold sm:gap-8">
