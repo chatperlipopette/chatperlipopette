@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { bestPromotion, type SitePromotion } from "@/lib/promotions";
 
-type CartItem = { code_barre: string; nom: string; prix_location: number; prix_caution: number };
+type CartItem = { code_barre: string; nom: string; prix_location: number; prix_caution: number; categories?: string };
 const CART_KEY = "chatperlipopette-panier-v1";
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHFVFRttFhytx7CQ7Ho8Pi7topvrJAYerngds6liFmrA-5N5icXd5Euiu_mcVXAJXp/exec";
 
@@ -13,6 +14,7 @@ function euro(value: number) {
 
 export default function PanierPage() {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [promotions, setPromotions] = useState<SitePromotion[]>([]);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [busy, setBusy] = useState(false);
@@ -28,6 +30,7 @@ export default function PanierPage() {
   useEffect(() => {
     try { setItems(JSON.parse(localStorage.getItem(CART_KEY) || "[]")); } catch { setItems([]); }
     fetch("/api/partner/session", { cache: "no-store" }).then(r => r.json()).then(d => setPartner(d)).catch(() => setPartner({ active: false }));
+    fetch("/api/annonces", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(d => { if (Array.isArray(d?.announcements)) setPromotions(d.announcements); }).catch(() => {});
   }, []);
 
   async function activatePartner(event: React.FormEvent<HTMLFormElement>) {
@@ -58,7 +61,9 @@ export default function PanierPage() {
   const days = start && end && end > start
     ? Math.max(1, Math.ceil((new Date(end + "T00:00:00").getTime() - new Date(start + "T00:00:00").getTime()) / 86400000))
     : 0;
-  const subtotal = useMemo(() => items.reduce((sum, item) => sum + Math.max(0, Number(item.prix_location) || 0), 0) * days, [items, days]);
+  const originalSubtotal = useMemo(() => items.reduce((sum, item) => sum + Math.max(0, Number(item.prix_location) || 0), 0) * days, [items, days]);
+  const promotionDiscount = useMemo(() => Math.round(items.reduce((sum, item) => sum + bestPromotion(Math.max(0, Number(item.prix_location) || 0), item.categories, promotions).discount, 0) * days * 100) / 100, [items, promotions, days]);
+  const subtotal = Math.max(0, originalSubtotal - promotionDiscount);
   const discountRate = items.length >= 3 ? 0.05 : items.length === 2 ? 0.02 : 0;
   const discount = Math.round(subtotal * discountRate * 100) / 100;
   const total = Math.round((subtotal - discount) * 100) / 100;
@@ -101,6 +106,7 @@ export default function PanierPage() {
         date_retour: end,
         nombre_jours: payment.days,
         sous_total_location: payment.subtotal,
+        reduction_promotion: payment.promotionDiscount || 0,
         reduction_panier_pourcentage: payment.basketRate,
         reduction_panier: payment.basketDiscount,
         reduction_partenaire: payment.partnerDiscount,
@@ -150,7 +156,7 @@ export default function PanierPage() {
               <div className="mt-4 divide-y">
                 {items.map((item) => (
                   <div key={item.code_barre} className="flex items-center justify-between gap-4 py-4">
-                    <div><p className="font-bold">{item.nom}</p><p className="text-sm text-gray-600">{euro(item.prix_location)} / jour · Caution {euro(item.prix_caution)}</p></div>
+                    <div><p className="font-bold">{item.nom}</p>{(() => { const deal = bestPromotion(Math.max(0, Number(item.prix_location) || 0), item.categories, promotions); return deal.promotion ? <p className="text-sm text-green-700"><span className="line-through text-gray-500">{euro(item.prix_location)}</span> <strong>{euro(deal.price)} / jour</strong> · {deal.promotion.discount} · Caution {euro(item.prix_caution)}</p> : <p className="text-sm text-gray-600">{euro(item.prix_location)} / jour · Caution {euro(item.prix_caution)}</p>; })()}</div>
                     <button type="button" onClick={() => update(items.filter((entry) => entry.code_barre !== item.code_barre))} className="rounded-lg border px-3 py-2 text-sm font-bold">Retirer</button>
                   </div>
                 ))}
@@ -187,7 +193,9 @@ export default function PanierPage() {
               <h2 className="text-xl font-black">💶 Récapitulatif</h2>
               <div className="mt-4 space-y-2 text-gray-700">
                 <p className="flex justify-between"><span>Durée</span><strong>{days ? `${days} jour(s)` : "À calculer"}</strong></p>
-                <p className="flex justify-between"><span>Sous-total</span><strong>{euro(subtotal)}</strong></p>
+                <p className="flex justify-between"><span>Sous-total avant promotions</span><strong>{euro(originalSubtotal)}</strong></p>
+                {promotionDiscount > 0 && <p className="flex justify-between text-green-700"><span>Soldes</span><strong>− {euro(promotionDiscount)}</strong></p>}
+                <p className="flex justify-between"><span>Sous-total après soldes</span><strong>{euro(subtotal)}</strong></p>
                 {discountRate > 0 && <p className="flex justify-between text-green-700"><span>Réduction fidélité panier ({discountRate * 100} %)</span><strong>− {euro(discount)}</strong></p>}
                 {partner.active && <p className="flex justify-between text-green-700"><span>Avantage partenaire</span><strong>{partner.discountType === "free" ? "− " + euro(estimatedPartnerDiscount) : "− " + euro(estimatedPartnerDiscount)}</strong></p>}
                 <p className="flex justify-between border-t pt-2 text-lg"><span>Total estimatif location</span><strong>{euro(estimatedTotal)}</strong></p>
