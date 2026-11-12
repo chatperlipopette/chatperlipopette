@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDuration } from "../../lib/games";
+import { bestPromotion } from "../../lib/promotions";
 
 type Game = {
   code_barre: string;
@@ -36,7 +37,7 @@ type Promotion = {
   category: string;
 };
 
-type CartItem = { code_barre: string; nom: string; prix_location: number; prix_caution: number };
+type CartItem = { code_barre: string; nom: string; prix_location: number; prix_caution: number; categories?: string };
 const CART_KEY = "chatperlipopette-panier-v1";
 
 const CATEGORIES = [
@@ -212,7 +213,7 @@ export default function CatalogueClient({ games }: Props) {
 
   function addToCart(game: Game) {
     const code = game.code_barre || game.nom;
-    const item: CartItem = { code_barre: code, nom: game.nom, prix_location: Number(game.prix_location || 0), prix_caution: Number(game.prix_caution || 0) };
+    const item: CartItem = { code_barre: code, nom: game.nom, prix_location: Number(game.prix_location || 0), prix_caution: Number(game.prix_caution || 0), categories: game.categories || "" };
     setCart((current) => {
       const next = current.some((entry) => entry.code_barre === code) ? current : [...current, item];
       localStorage.setItem(CART_KEY, JSON.stringify(next));
@@ -553,7 +554,17 @@ export default function CatalogueClient({ games }: Props) {
                     <div className="flex items-end justify-between gap-3 border-t border-gray-100 pt-4">
                       <div>
                         <p className="text-xs text-gray-500">Location</p>
-                        <p className="text-lg font-black text-gray-900">{formatPrice(game.prix_location)}</p>
+                        {(() => {
+                          const originalPrice = Number(game.prix_location || 0);
+                          const deal = bestPromotion(originalPrice, game.categories, promotions);
+                          return deal.promotion ? (
+                            <div>
+                              <p className="text-xs text-gray-500 line-through">{formatPrice(originalPrice)}</p>
+                              <p className="text-lg font-black text-green-700">{formatPrice(deal.price)}</p>
+                              <p className="text-xs font-extrabold text-green-700">SOLDES {deal.promotion.discount}</p>
+                            </div>
+                          ) : <p className="text-lg font-black text-gray-900">{formatPrice(game.prix_location)}</p>;
+                        })()}
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-500">Caution</p>
