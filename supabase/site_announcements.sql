@@ -20,3 +20,6 @@ alter table public.site_announcements enable row level security;
 
 -- L'accès passe par les routes serveur Next.js, protégées par la session admin
 -- et utilisant la clé service role. Aucune politique publique n'est nécessaire.
+
+-- Catégorie ciblée par une promotion : tous ou un type de jeu.
+alter table public.site_announcements add column if not exists category text not null default 'tous';
