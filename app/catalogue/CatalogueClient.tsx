@@ -243,14 +243,15 @@ export default function CatalogueClient({ games }: Props) {
         (specialFilter === "nouveautes" && game.nouveaute === true) ||
         (specialFilter === "coups-de-coeur" && game.coup_de_coeur === true);
 
-      // L'âge est l'âge minimum conseillé. Ne pas confondre valeurs absentes/invalides et âge numérique.
+      // Le filtre représente l'âge du joueur : à 10 ans, il peut choisir
+      // les jeux conseillés dès 3, 6, 8 ou 10 ans, mais pas ceux dès 12 ans.
       const gameAge =
         typeof game.age === "number" && Number.isFinite(game.age) && game.age >= 0
           ? game.age
           : null;
       const matchesAge =
         ageFilter === "tous" ||
-        (gameAge !== null && gameAge >= Number(ageFilter));
+        (gameAge !== null && gameAge <= Number(ageFilter));
 
       const minutes = durationInMinutes(game.duree);
       const matchesDuration =
@@ -340,7 +341,7 @@ export default function CatalogueClient({ games }: Props) {
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-2">
-            <label htmlFor="age-filter" className="text-sm font-bold text-gray-700">Âge minimum conseillé</label>
+            <label htmlFor="age-filter" className="text-sm font-bold text-gray-700">Âge du joueur</label>
             <select id="age-filter" value={ageFilter} onChange={(event) => setAgeFilter(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2">
               <option value="tous">Tous les âges</option>
               <option value="3">À partir de 3 ans</option>
