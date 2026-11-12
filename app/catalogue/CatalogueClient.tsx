@@ -27,6 +27,15 @@ type Props = {
   games: Game[];
 };
 
+type Promotion = {
+  id: string;
+  title: string;
+  message: string;
+  badge: string;
+  discount: string;
+  category: string;
+};
+
 type CartItem = { code_barre: string; nom: string; prix_location: number; prix_caution: number };
 const CART_KEY = "chatperlipopette-panier-v1";
 
@@ -184,6 +193,18 @@ export default function CatalogueClient({ games }: Props) {
   const [playersFilter, setPlayersFilter] = useState("tous");
   const [maxPriceFilter, setMaxPriceFilter] = useState("tous");
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/annonces", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.announcements)) setPromotions(data.announcements);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     try { setCart(JSON.parse(localStorage.getItem(CART_KEY) || "[]")); } catch { setCart([]); }
@@ -287,6 +308,19 @@ export default function CatalogueClient({ games }: Props) {
   return (
     <section>
       <div className="mb-5 flex justify-end"><Link href="/panier" className="rounded-xl bg-[#24211B] px-5 py-3 font-bold text-white">🛒 Mon panier ({cart.length})</Link></div>
+      {promotions.map((promotion) => (
+        <aside key={promotion.id} className="mb-4 overflow-hidden rounded-2xl border-2 border-[#E8B223] bg-gradient-to-r from-[#FFF0B8] to-[#FFF9E8] p-4 text-[#30250B] shadow-sm">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-center sm:justify-between sm:text-left">
+            <div>
+              <span className="rounded-full bg-[#24211B] px-3 py-1 text-xs font-black uppercase text-white">{promotion.badge || "SOLDES"}</span>
+              <h2 className="mt-2 text-xl font-black">{promotion.title}</h2>
+              <p className="text-sm">{promotion.message}</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-wide">{promotion.category === "tous" ? "Tous les jeux" : "Catégorie : " + categoryLabel(promotion.category)}</p>
+            </div>
+            {promotion.discount && <strong className="text-3xl font-black text-[#A45B00]">{promotion.discount}</strong>}
+          </div>
+        </aside>
+      ))}
       <div className="mb-8 rounded-3xl border border-[#EADCB9] bg-white p-5 shadow-sm md:p-7">
         <label htmlFor="game-search" className="mb-2 block text-sm font-bold text-gray-700">
           Rechercher un jeu
