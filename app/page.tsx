@@ -35,6 +35,7 @@ export default function Home() {
             <Link href="/catalogue" className="transition hover:underline">Catalogue</Link>
             <a href="#abonnements" className="transition hover:underline">Abonnements</a>
             <a href="#fidelite" className="transition hover:underline">Fidélité</a>
+            <Link href="/partenaires" className="transition hover:underline">Espace partenaire</Link>
           </nav>
         </div>
       </header>
@@ -237,7 +238,10 @@ export default function Home() {
             <p className="font-black">Chat'Perlipopette</p>
             <p className="text-sm">Location de jeux de société · Secteur de Toulouse</p>
           </div>
-          <Link href="/catalogue" className="font-bold hover:underline">Découvrir le catalogue →</Link>
+          <div className="flex flex-wrap justify-center gap-5">
+            <Link href="/catalogue" className="font-bold hover:underline">Découvrir le catalogue →</Link>
+            <Link href="/partenaires" className="font-bold hover:underline">Espace partenaire →</Link>
+          </div>
           <p className="text-sm">© {new Date().getFullYear()} Chat'Perlipopette</p>
         </div>
       </footer>
