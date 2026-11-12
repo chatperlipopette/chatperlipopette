@@ -19,7 +19,7 @@ export default async function PublicAnnouncements() {
 
   try {
     const response = await fetch(
-      `${url}/rest/v1/site_announcements?select=id,title,message,badge,discount,category,image_url,starts_at,ends_at&active=eq.true&category=eq.tous&order=created_at.desc`,
+      `${url}/rest/v1/site_announcements?select=id,title,message,badge,discount,category,image_url,starts_at,ends_at&active=eq.true&order=created_at.desc`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" }
     );
     if (!response.ok) return null;
@@ -37,7 +37,7 @@ export default async function PublicAnnouncements() {
           <section key={item.id} className="relative overflow-hidden border-b border-[#E8B223] bg-gradient-to-r from-[#FFF0B8] via-[#FFF8E8] to-[#F7D96C] px-5 py-4 text-[#30250B]">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-2 text-center sm:flex-row sm:gap-5">
               <span className="rounded-full bg-[#24211B] px-3 py-1 text-xs font-black uppercase tracking-wide text-white">{item.badge || "INFO"}</span>
-              <div><h2 className="text-lg font-black">{item.title}</h2><p className="text-sm">{item.message}</p></div>
+              <div><h2 className="text-lg font-black">{item.title}</h2><p className="text-sm">{item.message}</p><p className="mt-1 text-xs font-semibold">{item.category === "tous" ? "Tous les jeux" : "Catégorie : " + item.category}</p></div>
               {item.discount && <strong className="text-2xl font-black text-[#A45B00]">{item.discount}</strong>}
               {item.image_url && <img src={item.image_url} alt="" loading="lazy" className="max-h-16 max-w-28 rounded-lg object-contain" />}
             </div>
