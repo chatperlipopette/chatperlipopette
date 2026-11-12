@@ -344,13 +344,13 @@ export default function CatalogueClient({ games }: Props) {
             <label htmlFor="age-filter" className="text-sm font-bold text-gray-700">Âge du joueur</label>
             <select id="age-filter" value={ageFilter} onChange={(event) => setAgeFilter(event.target.value)} className="rounded-xl border border-gray-300 bg-white px-3 py-2">
               <option value="tous">Tous les âges</option>
-              <option value="3">À partir de 3 ans</option>
-              <option value="6">À partir de 6 ans</option>
-              <option value="8">À partir de 8 ans</option>
-              <option value="10">À partir de 10 ans</option>
-              <option value="12">À partir de 12 ans</option>
-              <option value="14">À partir de 14 ans</option>
-              <option value="18">À partir de 18 ans</option>
+              <option value="3">Joueur de 3 ans ou plus</option>
+              <option value="6">Joueur de 6 ans ou plus</option>
+              <option value="8">Joueur de 8 ans ou plus</option>
+              <option value="10">Joueur de 10 ans ou plus</option>
+              <option value="12">Joueur de 12 ans ou plus</option>
+              <option value="14">Joueur de 14 ans ou plus</option>
+              <option value="18">Joueur de 18 ans ou plus</option>
             </select>
           </div>
           <div className="flex flex-col gap-2">
