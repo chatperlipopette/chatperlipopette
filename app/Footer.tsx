@@ -42,6 +42,7 @@ export default function Footer() {
           </div>
           <div>
             <h2 className="text-lg font-extrabold">Contact et réseaux</h2>
+            <Link href="/partenaires" className="mt-3 inline-flex rounded-lg border border-[#F7D96C]/50 px-4 py-2 font-bold text-[#F7D96C] transition hover:bg-white/10">🤝 Espace partenaire</Link>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {contacts.map((contact) => (
                 <a
