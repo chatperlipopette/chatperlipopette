@@ -6,6 +6,7 @@ type Announcement = {
   message: string;
   badge: string;
   discount: string;
+  category: string;
   image_url: string | null;
   starts_at: string | null;
   ends_at: string | null;
@@ -18,7 +19,7 @@ export default async function PublicAnnouncements() {
 
   try {
     const response = await fetch(
-      `${url}/rest/v1/site_announcements?select=id,title,message,badge,discount,image_url,starts_at,ends_at&active=eq.true&order=created_at.desc`,
+      `${url}/rest/v1/site_announcements?select=id,title,message,badge,discount,category,image_url,starts_at,ends_at&active=eq.true&category=eq.tous&order=created_at.desc`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" }
     );
     if (!response.ok) return null;
