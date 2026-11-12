@@ -48,8 +48,8 @@ export default function AnnoncesAdminClient() {
     setForm({
       title: item.title, message: item.message, badge: item.badge || "PROMOTION",
       discount: item.discount || "", category: item.category || "tous", image_url: item.image_url || "",
-      starts_at: item.starts_at ? item.starts_at.slice(0, 16) : "",
-      ends_at: item.ends_at ? item.ends_at.slice(0, 16) : "", active: item.active,
+      starts_at: item.starts_at ? new Date(item.starts_at).toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).replace(" ", "T").slice(0, 16) : "",
+      ends_at: item.ends_at ? new Date(item.ends_at).toLocaleString("sv-SE", { timeZone: "Europe/Paris" }).replace(" ", "T").slice(0, 16) : "", active: item.active,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -60,7 +60,12 @@ export default function AnnoncesAdminClient() {
     try {
       const response = await fetch("/api/admin/annonces", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, id: editing }),
+        body: JSON.stringify({
+          ...form,
+          id: editing,
+          starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : "",
+          ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : "",
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Enregistrement impossible.");
