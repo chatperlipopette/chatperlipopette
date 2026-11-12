@@ -498,7 +498,11 @@ export default function CatalogueClient({ games }: Props) {
 
                   {game.editeur && <p className="text-sm text-gray-500">Éditeur : {game.editeur}</p>}
                   {game.annee && <p className="text-sm text-gray-500">Année de sortie : {game.annee}</p>}
-                  {game.categories && <p className="mt-2 text-sm font-semibold text-[#806000]">{game.categories}</p>}
+                  {game.categories && (
+                    <p className="mt-2 text-sm font-semibold text-[#806000]">
+                      {game.categories.split(",").map((item) => categoryLabel(item.trim())).join(" · ")}
+                    </p>
+                  )}
 
                   <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-700">
                     {(game.nombre_min !== null || game.nombre_max !== null) && (
