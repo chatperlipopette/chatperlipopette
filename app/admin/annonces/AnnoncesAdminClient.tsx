@@ -8,6 +8,7 @@ type Announcement = {
   message: string;
   badge: string;
   discount: string;
+  category: string;
   image_url: string;
   starts_at: string | null;
   ends_at: string | null;
@@ -15,7 +16,7 @@ type Announcement = {
 };
 
 const emptyForm = {
-  title: "", message: "", badge: "PROMOTION", discount: "", image_url: "",
+  title: "", message: "", badge: "PROMOTION", discount: "", category: "tous", image_url: "",
   starts_at: "", ends_at: "", active: true,
 };
 
@@ -46,7 +47,7 @@ export default function AnnoncesAdminClient() {
     setEditing(item.id);
     setForm({
       title: item.title, message: item.message, badge: item.badge || "PROMOTION",
-      discount: item.discount || "", image_url: item.image_url || "",
+      discount: item.discount || "", category: item.category || "tous", image_url: item.image_url || "",
       starts_at: item.starts_at ? item.starts_at.slice(0, 16) : "",
       ends_at: item.ends_at ? item.ends_at.slice(0, 16) : "", active: item.active,
     });
@@ -112,6 +113,20 @@ export default function AnnoncesAdminClient() {
             <label className="block text-sm font-bold">Réduction affichée (facultatif)
               <input className={input+" mt-2"} maxLength={40} value={form.discount} onChange={e=>setForm({...form,discount:e.target.value})} placeholder="Ex. -30 % ou 2 € de réduction" />
             </label>
+            <label className="block text-sm font-bold">Catégorie concernée
+              <select className={input+" mt-2"} value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+                <option value="tous">Toutes les catégories</option>
+                <option value="cooperatif">Coopératif</option>
+                <option value="ambiance">Ambiance</option>
+                <option value="strategie">Stratégie</option>
+                <option value="enquete">Enquête</option>
+                <option value="famille">Famille</option>
+                <option value="a deux">À deux</option>
+                <option value="cartes">Cartes</option>
+                <option value="adresse">Adresse</option>
+                <option value="reflexion">Réflexion</option>
+              </select>
+            </label>
             <label className="block text-sm font-bold">URL de l’image (facultatif)
               <input className={input+" mt-2"} type="url" value={form.image_url} onChange={e=>setForm({...form,image_url:e.target.value})} placeholder="https://…" />
             </label>
@@ -139,7 +154,7 @@ export default function AnnoncesAdminClient() {
             <div className="mt-4 grid gap-4">
               {items.map(item => <article key={item.id} className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><span className="text-xs font-black uppercase tracking-wide text-[#916500]">{item.badge}</span><h3 className="mt-1 text-xl font-black">{item.title}</h3><p className="mt-1 text-gray-600">{item.message}</p>{item.discount && <p className="mt-2 font-black text-[#A45B00]">{item.discount}</p>}</div>
+                  <div><span className="text-xs font-black uppercase tracking-wide text-[#916500]">{item.badge}</span><h3 className="mt-1 text-xl font-black">{item.title}</h3><p className="mt-1 text-gray-600">{item.message}</p>{item.discount && <p className="mt-2 font-black text-[#A45B00]">{item.discount}</p>}<p className="mt-2 text-xs font-semibold text-gray-500">Catégorie : {item.category === "tous" ? "Toutes" : item.category}</p></div>
                   <span className={item.active ? "rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800" : "rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700"}>{item.active ? "Activée" : "Désactivée"}</span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
