@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Footer from "./Footer";
+import PublicAnnouncements from "@/components/PublicAnnouncements";
 import "./globals.css";
 
 const siteUrl = "https://chatperlipopette.com";
