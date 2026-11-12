@@ -7,6 +7,10 @@ export default function Admin() {
         🛠 Administration Chat’Perlipopette
       </h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Link href="/admin/annonces" className="rounded-2xl border-2 border-[#E8B223] bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
+          <h2 className="text-2xl font-bold">📣 Annonces & promotions</h2>
+          <p className="mt-2">Publier des soldes, réductions et actualités visibles par les visiteurs.</p>
+        </Link>
         <Link href="/admin/catalogue" className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
           <h2 className="text-2xl font-bold">✨ Nouveautés & coups de cœur</h2>
           <p className="mt-2">Choisir les jeux mis en avant dans le catalogue public.</p>
