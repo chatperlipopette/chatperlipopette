@@ -385,7 +385,7 @@ export default function CatalogueClient({ games }: Props) {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <label htmlFor="availability-filter" className="text-sm font-bold text-gray-700">
             Disponibilité
           </label>
@@ -399,9 +399,25 @@ export default function CatalogueClient({ games }: Props) {
             <option value="disponibles">Disponibles uniquement</option>
             <option value="indisponibles">Indisponibles uniquement</option>
           </select>
-          <p className="text-sm text-gray-600 sm:ml-auto">
+          <p className="text-sm font-semibold text-gray-600 sm:ml-auto" aria-live="polite">
             {filteredGames.length} jeu{filteredGames.length > 1 ? "x" : ""} trouvé{filteredGames.length > 1 ? "s" : ""}
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setCategory("tous");
+              setAvailability("tous");
+              setSpecialFilter("tous");
+              setAgeFilter("tous");
+              setDurationFilter("tous");
+              setPlayersFilter("tous");
+              setMaxPriceFilter("tous");
+            }}
+            className="rounded-xl border border-[#E8B223] px-4 py-2 text-sm font-bold text-[#5B4300] transition hover:bg-[#FFF8E8]"
+          >
+            Effacer les filtres
+          </button>
         </div>
       </div>
 
@@ -471,7 +487,7 @@ export default function CatalogueClient({ games }: Props) {
                 <div className="flex flex-1 flex-col p-5">
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-black leading-tight text-gray-900">{game.nom}</h2>
+                      <h2 className="text-xl font-black leading-tight text-gray-900 [overflow-wrap:anywhere]">{game.nom}</h2>
                       {game.nouveaute && <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-extrabold text-blue-800">✨ Nouveauté</span>}
                       {game.coup_de_coeur && <span className="rounded-full bg-pink-100 px-2 py-1 text-xs font-extrabold text-pink-800">❤️ Coup de cœur</span>}
                     </div>
