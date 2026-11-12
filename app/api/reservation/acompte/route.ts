@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { getGames, type Game } from "@/lib/games";
 import { getPartnerById, getPartnerSessionId, getConfig } from "@/lib/partner-access";
+import { bestPromotion, type SitePromotion } from "@/lib/promotions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,9 +39,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Un jeu du panier n'a pas de prix de location valide." }, { status: 400 });
     }
     const subtotal = Math.round(chosen.reduce((sum: number, game: Game) => sum + Number(game.prix_location || 0), 0) * days * 100) / 100;
+    const promotions = await getActivePromotions();
+    const promotionDiscount = Math.round(chosen.reduce((sum: number, game: Game) => {
+      const deal = bestPromotion(Number(game.prix_location || 0), game.categories, promotions);
+      return sum + deal.discount * days;
+    }, 0) * 100) / 100;
+    const afterPromotions = Math.max(0, subtotal - promotionDiscount);
     const basketRate = chosen.length >= 3 ? 0.05 : chosen.length === 2 ? 0.02 : 0;
-    const basketDiscount = Math.round(subtotal * basketRate * 100) / 100;
-    const afterBasket = Math.max(0, subtotal - basketDiscount);
+    const basketDiscount = Math.round(afterPromotions * basketRate * 100) / 100;
+    const afterBasket = Math.max(0, afterPromotions - basketDiscount);
 
     let partner = null;
     const partnerId = await getPartnerSessionId();
@@ -54,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     if (total === 0) {
       if (partner) await incrementPartnerUsage(partner.id);
-      return NextResponse.json({ free: true, days, subtotal, basketDiscount, basketRate: basketRate * 100, partnerDiscount, partnerName: partner?.name || null, total, deposit: 0, caution, gameNames });
+      return NextResponse.json({ free: true, days, subtotal, promotionDiscount, afterPromotions, basketDiscount, basketRate: basketRate * 100, partnerDiscount, partnerName: partner?.name || null, total, deposit: 0, caution, gameNames });
     }
     const apiKey = process.env.SUMUP_API_KEY?.trim();
     const merchantCode = process.env.SUMUP_MERCHANT_CODE?.trim();
@@ -83,12 +90,32 @@ export async function POST(request: NextRequest) {
     if (partner) await incrementPartnerUsage(partner.id);
     return NextResponse.json({
       checkoutUrl: payment.hosted_checkout_url, checkoutId: payment.id, reference: checkoutReference,
-      days, subtotal, basketDiscount, basketRate: basketRate * 100, partnerDiscount,
+      days, subtotal, promotionDiscount, afterPromotions, basketDiscount, basketRate: basketRate * 100, partnerDiscount,
       partnerName: partner?.name || null, total, deposit, caution, gameNames,
     });
   } catch (error) {
     console.error("Reservation deposit checkout error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Impossible de préparer le paiement." }, { status: 500 });
+  }
+}
+
+async function getActivePromotions(): Promise<SitePromotion[]> {
+  const config = getConfig();
+  if (!config) return [];
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/site_announcements?select=id,title,message,badge,discount,category,starts_at,ends_at&active=eq.true`,
+      { headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store" }
+    );
+    if (!response.ok) return [];
+    const rows = await response.json() as SitePromotion[];
+    const now = Date.now();
+    return rows.filter((item) =>
+      (!item.starts_at || new Date(item.starts_at).getTime() <= now) &&
+      (!item.ends_at || new Date(item.ends_at).getTime() >= now)
+    );
+  } catch {
+    return [];
   }
 }
 
