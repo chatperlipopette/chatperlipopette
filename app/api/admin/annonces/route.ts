@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
       title, message,
       badge: typeof body.badge === "string" ? body.badge.trim().slice(0, 30) : "INFO",
       discount: typeof body.discount === "string" ? body.discount.trim().slice(0, 40) : "",
+      category: typeof body.category === "string" ? body.category.trim().slice(0, 40) : "tous",
       image_url: imageUrl || null,
       starts_at: startsAt?.toISOString() || null,
       ends_at: endsAt?.toISOString() || null,
