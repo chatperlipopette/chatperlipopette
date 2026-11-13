@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ReservationsClient from "./ReservationsClient";
 import { redirect } from "next/navigation";
 import { isAdminSession } from "@/lib/admin-auth";
 
@@ -69,8 +70,6 @@ function statusLabel(status?: string | null) {
 export default async function AdminReservationsPage() {
   if (!(await isAdminSession())) redirect("/admin/catalogue/connexion");
   const { items, error } = await getReservations();
-  const pending = items.filter((item) => item.status === "pending").length;
-  const confirmed = items.filter((item) => item.status === "confirmed").length;
 
   return (
     <main className="min-h-screen bg-[#FFF8E8] p-4 md:p-10">
@@ -89,39 +88,7 @@ export default async function AdminReservationsPage() {
           </div>
         ) : (
           <>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white p-5 shadow"><p className="text-sm text-gray-600">Total</p><p className="mt-1 text-3xl font-bold">{items.length}</p></div>
-              <div className="rounded-2xl bg-white p-5 shadow"><p className="text-sm text-gray-600">En attente</p><p className="mt-1 text-3xl font-bold">{pending}</p></div>
-              <div className="rounded-2xl bg-white p-5 shadow"><p className="text-sm text-gray-600">Confirmées</p><p className="mt-1 text-3xl font-bold">{confirmed}</p></div>
-            </div>
-            {items.length === 0 ? (
-              <div className="mt-6 rounded-2xl bg-white p-8 shadow">
-                <h2 className="text-xl font-bold">Aucune réservation enregistrée</h2>
-                <p className="mt-2 text-gray-700">La page fonctionne, mais aucune ligne n’a été trouvée dans game_reservations.</p>
-              </div>
-            ) : (
-              <div className="mt-6 overflow-x-auto rounded-2xl bg-white shadow">
-                <table className="w-full min-w-[850px] border-collapse text-left text-sm">
-                  <thead className="bg-amber-50">
-                    <tr>
-                      <th className="p-4">Jeu</th><th className="p-4">Client</th><th className="p-4">Début</th><th className="p-4">Retour</th><th className="p-4">Statut</th><th className="p-4">Créée le</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item) => (
-                      <tr key={String(item.id)} className="border-t border-gray-100 align-top">
-                        <td className="p-4"><p className="font-semibold">{item.game_name || "Jeu sans nom"}</p><p className="mt-1 text-xs text-gray-500">{item.game_code || ""}</p><p className="mt-1 text-xs text-gray-500">Réf. {String(item.id)}</p></td>
-                        <td className="p-4"><p>{item.customer_name || "Nom non renseigné"}</p><p className="text-gray-600">{item.customer_email || "E-mail non renseigné"}</p><p className="text-gray-600">{item.customer_phone || ""}</p></td>
-                        <td className="p-4 whitespace-nowrap">{date(item.date_debut)}</td>
-                        <td className="p-4 whitespace-nowrap">{date(item.date_retour)}</td>
-                        <td className="p-4"><span className="inline-block rounded-full bg-amber-100 px-3 py-1 font-medium">{statusLabel(item.status)}</span></td>
-                        <td className="p-4 whitespace-nowrap">{date(item.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <ReservationsClient initialItems={items} />
           </>
         )}
         <p className="mt-6 text-sm text-gray-600">Pour protéger les données des clients, cette page est accessible uniquement avec une session administrateur valide.</p>
