@@ -207,7 +207,24 @@ export default function ReservationForm({
     ===================================================== */
 
     try {
-      // Enregistrer la demande avec le statut de paiement en attente.
+      // Enregistrer la réservation dans Supabase avant de lancer le paiement.
+      const reservationResponse = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          game_code: codeBarre,
+          game_name: jeu,
+          date_debut: dateDebut,
+          date_retour: dateRetour,
+          customer_email: data.email,
+        }),
+      });
+      const reservationResult = await reservationResponse.json().catch(() => ({}));
+      if (!reservationResponse.ok) {
+        throw new Error(reservationResult.error || "Impossible d'enregistrer la réservation.");
+      }
+
+      // Conserver également l'envoi historique vers Google Sheets.
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
