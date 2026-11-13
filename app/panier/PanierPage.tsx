@@ -116,6 +116,22 @@ export default function PanierPage() {
         acompte_30_pourcent: payment.deposit,
         statut_paiement: payment.free ? "Location offerte - paiement non requis" : "En attente de paiement de l'acompte",
       };
+      // Enregistrer une ligne par jeu dans Supabase pour l'espace administrateur.
+      const reservationResponse = await fetch("/api/reservations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({ game_code: item.code_barre, game_name: item.nom })),
+          date_debut: start,
+          date_retour: end,
+          customer_email: customer.email,
+        }),
+      });
+      const reservationResult = await reservationResponse.json().catch(() => ({}));
+      if (!reservationResponse.ok) {
+        throw new Error(reservationResult.error || "Impossible d'enregistrer les réservations.");
+      }
+
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
