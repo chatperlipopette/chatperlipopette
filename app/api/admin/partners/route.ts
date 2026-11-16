@@ -13,12 +13,18 @@ export async function GET() {
   if (!(await isAdminSession())) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   const config = configOrResponse();
   if (!config) return NextResponse.json({ error: "Configuration Supabase manquante." }, { status: 503 });
-  const response = await fetch(`${config.url}/rest/v1/partners?select=id,name,username,promo_code,discount_type,discount_percent,active,expires_at,max_uses,usage_count,created_at&order=created_at.desc`, { headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store" });
+  const endpoint = `${config.url}/rest/v1/partners?select=id,name,username,promo_code,discount_type,discount_percent,active,expires_at,max_uses,usage_count,created_at&order=created_at.desc`;
+  let response: Response;
+  try {
+    response = await fetch(endpoint, { headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store" });
+  } catch (error) {
+    return NextResponse.json({ error: `Connexion Supabase impossible : ${error instanceof Error ? error.message : "erreur réseau"}`, endpoint: endpoint.split("?")[0] }, { status: 502 });
+  }
   if (!response.ok) {
     const detail = await response.text();
     let reason = detail;
     try { const parsed = JSON.parse(detail); reason = parsed.message || parsed.details || parsed.hint || parsed.code || detail; } catch {}
-    return NextResponse.json({ error: `Supabase (${response.status}) : ${String(reason).slice(0, 300)}` }, { status: 502 });
+    return NextResponse.json({ error: `Supabase (${response.status}) : ${String(reason).slice(0, 300)}`, endpoint: endpoint.split("?")[0] }, { status: 502 });
   }
   return NextResponse.json({ partners: await response.json() });
 }
