@@ -14,7 +14,12 @@ export async function GET() {
   const config = configOrResponse();
   if (!config) return NextResponse.json({ error: "Configuration Supabase manquante." }, { status: 503 });
   const response = await fetch(`${config.url}/rest/v1/partners?select=id,name,username,promo_code,discount_type,discount_percent,active,expires_at,max_uses,usage_count,created_at&order=created_at.desc`, { headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store" });
-  if (!response.ok) return NextResponse.json({ error: "Impossible de charger les partenaires." }, { status: 502 });
+  if (!response.ok) {
+    const detail = await response.text();
+    let reason = detail;
+    try { const parsed = JSON.parse(detail); reason = parsed.message || parsed.details || parsed.hint || parsed.code || detail; } catch {}
+    return NextResponse.json({ error: `Supabase (${response.status}) : ${String(reason).slice(0, 300)}` }, { status: 502 });
+  }
   return NextResponse.json({ partners: await response.json() });
 }
 export async function POST(request: NextRequest) {
@@ -40,7 +45,9 @@ export async function POST(request: NextRequest) {
   const response = await fetch(`${config.url}/rest/v1/partners`, { method: "POST", headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, "Content-Type": "application/json", Prefer: "return=representation" }, body: JSON.stringify(row), cache: "no-store" });
   if (!response.ok) {
     const detail = await response.text();
-    return NextResponse.json({ error: detail.includes("23505") ? "Cet identifiant ou ce code existe déjà." : "Impossible de créer le partenaire. Vérifie la migration Supabase." }, { status: 502 });
+    let reason = detail;
+    try { const parsed = JSON.parse(detail); reason = parsed.message || parsed.details || parsed.hint || parsed.code || detail; } catch {}
+    return NextResponse.json({ error: detail.includes("23505") ? "Cet identifiant ou ce code existe déjà." : `Supabase (${response.status}) : ${String(reason).slice(0, 300)}` }, { status: 502 });
   }
   const rows = await response.json();
   return NextResponse.json({ partner: rows[0] }, { status: 201 });
