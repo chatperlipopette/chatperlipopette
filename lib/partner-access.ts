@@ -60,7 +60,10 @@ export async function getPartnerById(id: string) {
   return partner;
 }
 export function getConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
+  // Accepte l'URL du projet seule ou une URL qui se termine par /rest/v1.
+  // Les routes ajoutent elles-mêmes /rest/v1 à l'URL de base.
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const url = rawUrl?.replace(/\/rest\/v1$/i, "");
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   return url && key ? { url, key } : null;
 }
