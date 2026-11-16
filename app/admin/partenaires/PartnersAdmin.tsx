@@ -17,7 +17,7 @@ export default function PartnersAdmin() {
   const [maxUses, setMaxUses] = useState("");
   async function load() {
     setLoading(true); setError("");
-    try { const r = await fetch("/api/admin/partners", { cache: "no-store" }); const d = await r.json(); if (!r.ok) throw new Error(d.error || "Chargement impossible."); setPartners(d.partners || []); }
+    try { const r = await fetch("/api/admin/partners", { cache: "no-store" }); const d = await r.json(); if (!r.ok) throw new Error([d.error || "Chargement impossible.", d.endpoint ? `Adresse appelée : ${d.endpoint}` : ""].filter(Boolean).join(" — ")); setPartners(d.partners || []); }
     catch (e) { setError(e instanceof Error ? e.message : "Erreur."); } finally { setLoading(false); }
   }
   useEffect(() => { void load(); }, []);
