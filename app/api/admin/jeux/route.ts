@@ -5,7 +5,7 @@ import { getGames, Game } from "@/lib/games";
 export const dynamic = "force-dynamic";
 
 function config() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "").replace(/\/rest\/v1$/i, "");
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   return url && key ? { url, key } : null;
 }
