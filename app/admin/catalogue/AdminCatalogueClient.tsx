@@ -159,7 +159,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
       setDraft((current) => ({
         ...current,
         ...found,
-        code_barre: current.code_barre || (/^\\d{8,14}$/.test(term) ? term : found.code_barre || ""),
+        code_barre: current.code_barre || (/^\d{8,14}$/.test(term) ? term : found.code_barre || ""),
         prix_location: current.prix_location,
         prix_caution: current.prix_caution,
         disponibilite: current.disponibilite || "dispo",
@@ -265,7 +265,7 @@ export default function AdminCatalogueClient({ games, email }: { games: Game[]; 
           </div>
           <div className="mb-5 rounded-xl border border-[#EADCB9] bg-[#FFFCF4] p-4">
             <p className="font-bold">Préremplir automatiquement la fiche</p>
-            <p className="mt-1 text-sm text-gray-600">Recherche par nom de jeu. Tu peux aussi essayer un code-barres ; si aucune fiche n’est trouvée, complète les champs manuellement.</p>
+            <p className="mt-1 text-sm text-gray-600">Recherche automatique par nom du jeu. Le code-barres se saisit séparément dans le champ de la fiche ; si aucune fiche n’est trouvée, complète les informations manuellement.</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input value={lookupQuery} onChange={(e) => setLookupQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void lookupGame(); } }} placeholder="Nom du jeu ou code-barres…" className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 font-normal" />
               <button type="button" onClick={lookupGame} disabled={lookupLoading} className="rounded-lg bg-[#E8B223] px-4 py-2 font-bold text-black disabled:opacity-50">{lookupLoading ? "Recherche…" : "Rechercher une fiche"}</button>
