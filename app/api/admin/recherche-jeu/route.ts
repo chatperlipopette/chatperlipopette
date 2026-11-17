@@ -23,7 +23,7 @@ function valueOf(xml: string, name: string): string {
 
 function textOf(xml: string, name: string): string {
   const match = xml.match(new RegExp("<" + name + "\\b[^>]*>([\\s\\S]*?)</" + name + ">", "i"));
-  return match ? decodeXml(match[1].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()) : "";
+  return match ? decodeXml(match[1]).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
 }
 
 function normalize(value: string): string {
