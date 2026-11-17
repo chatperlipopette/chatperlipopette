@@ -23,11 +23,11 @@ function valueOf(xml: string, name: string): string {
 
 function textOf(xml: string, name: string): string {
   const match = xml.match(new RegExp("<" + name + "\\b[^>]*>([\\s\\S]*?)</" + name + ">", "i"));
-  return match ? decodeXml(match[1].replace(/<[^>]*>/g, " ").replace(/\\s+/g, " ").trim()) : "";
+  return match ? decodeXml(match[1].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()) : "";
 }
 
 function normalize(value: string): string {
-  return value.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 async function bggFetch(url: string): Promise<string> {
@@ -57,9 +57,9 @@ export async function GET(request: NextRequest) {
     searchUrl.searchParams.set("query", query);
     searchUrl.searchParams.set("type", "boardgame");
     const searchXml = await bggFetch(searchUrl.toString());
-    const items = [...searchXml.matchAll(/<item\\b([^>]*)>([\\s\\S]*?)<\\/item>/gi)]
+    const items = [...searchXml.matchAll(/<item\b([^>]*)>([\s\S]*?)<\/item>/gi)]
       .map((match) => {
-        const nameTag = match[2].match(/<name\\b[^>]*type="primary"[^>]*>/i)?.[0] || match[2].match(/<name\\b[^>]*>/i)?.[0] || "";
+        const nameTag = match[2].match(/<name\b[^>]*type="primary"[^>]*>/i)?.[0] || match[2].match(/<name\b[^>]*>/i)?.[0] || "";
         return { id: attribute(match[1], "id"), name: attribute(nameTag, "value"), year: valueOf(match[2], "yearpublished") };
       })
       .filter((item) => item.id && item.name)
@@ -77,10 +77,10 @@ export async function GET(request: NextRequest) {
     const thingUrl = new URL("https://boardgamegeek.com/xmlapi2/thing");
     thingUrl.searchParams.set("id", selected.id);
     const thingXml = await bggFetch(thingUrl.toString());
-    const itemXml = thingXml.match(/<item\\b[^>]*>([\\s\\S]*?)<\\/item>/i)?.[1];
+    const itemXml = thingXml.match(/<item\b[^>]*>([\s\S]*?)<\/item>/i)?.[1];
     if (!itemXml) return NextResponse.json({ game: null, message: "La fiche détaillée n’est pas disponible." });
 
-    const publisherTag = itemXml.match(/<link\\b[^>]*type="boardgamepublisher"[^>]*>/i)?.[0] || "";
+    const publisherTag = itemXml.match(/<link\b[^>]*type="boardgamepublisher"[^>]*>/i)?.[0] || "";
     const image = textOf(itemXml, "image") || textOf(itemXml, "thumbnail");
     const description = textOf(itemXml, "description").slice(0, 4500);
     const duration = valueOf(itemXml, "playingtime") || valueOf(itemXml, "minplaytime");
