@@ -10,7 +10,7 @@ function getSupabaseConfig() {
     console.error("Configuration Supabase manquante : NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY.");
     return null;
   }
-  return { url: url.replace(/\/$/, ""), key };
+  return { url: url.replace(/\/$/, "").replace(/\/rest\/v1$/i, ""), key };
 }
 
 function readableError(error: unknown) {
