@@ -27,6 +27,10 @@ export default function Admin() {
           <h2 className="text-2xl font-bold">💬 Avis et questions</h2>
           <p className="mt-2">Modérer les avis des jeux et répondre aux questions des visiteurs.</p>
         </Link>
+        <Link href="/admin/chasse" className="rounded-2xl border-2 border-[#E8B223] bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
+          <h2 className="text-2xl font-bold">🕵️ Chasse aux codes secrets</h2>
+          <p className="mt-2">Créer des énigmes publiques et suivre les codes individuels de réduction de 10 %.</p>
+        </Link>
         <Link href="/admin/partenaires" className="rounded-2xl bg-white p-6 shadow-lg transition hover:shadow-xl">
           <h2 className="text-2xl font-bold">🤝 Partenaires & avantages</h2>
           <p className="mt-2">Créer des comptes privés et des codes offrant des locations gratuites ou des réductions.</p>

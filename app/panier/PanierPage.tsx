@@ -25,6 +25,7 @@ export default function PanierPage() {
   const [partnerCode, setPartnerCode] = useState("");
   const [partnerMessage, setPartnerMessage] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
+  const [huntCode, setHuntCode] = useState("");
   const [bookingComplete, setBookingComplete] = useState(false);
 
   useEffect(() => {
@@ -69,7 +70,9 @@ export default function PanierPage() {
   const total = Math.round((subtotal - discount) * 100) / 100;
   const partnerRate = partner.active ? (partner.discountType === "free" ? 1 : Math.min(100, Math.max(0, Number(partner.discountPercent) || 0)) / 100) : 0;
   const estimatedPartnerDiscount = Math.round(total * partnerRate * 100) / 100;
-  const estimatedTotal = Math.max(0, Math.round((total - estimatedPartnerDiscount) * 100) / 100);
+  const afterPartner = Math.max(0, Math.round((total - estimatedPartnerDiscount) * 100) / 100);
+  const estimatedHuntDiscount = huntCode.trim() ? Math.round(afterPartner * 0.10 * 100) / 100 : 0;
+  const estimatedTotal = Math.max(0, Math.round((afterPartner - estimatedHuntDiscount) * 100) / 100);
   const deposit = Math.round(estimatedTotal * 0.3 * 100) / 100;
   const caution = items.reduce((sum, item) => sum + Math.max(0, Number(item.prix_caution) || 0), 0);
 
@@ -93,7 +96,7 @@ export default function PanierPage() {
       const paymentResponse = await fetch("/api/reservation/acompte", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: items.map(item => ({ code_barre: item.code_barre })), date_debut: start, date_retour: end }),
+        body: JSON.stringify({ items: items.map(item => ({ code_barre: item.code_barre })), date_debut: start, date_retour: end, hunt_code: huntCode.trim().toUpperCase() }),
       });
       const payment = await paymentResponse.json().catch(() => ({}));
       if (!paymentResponse.ok) throw new Error(payment.error || "Impossible de calculer la réservation.");
@@ -110,6 +113,8 @@ export default function PanierPage() {
         reduction_panier_pourcentage: payment.basketRate,
         reduction_panier: payment.basketDiscount,
         reduction_partenaire: payment.partnerDiscount,
+        reduction_chasse_codes: payment.huntDiscount || 0,
+        code_chasse: payment.huntCode || "",
         partenaire: payment.partnerName || "",
         total_location: payment.total,
         caution_totale: payment.caution,
@@ -198,6 +203,14 @@ export default function PanierPage() {
             </section>
 
             <section className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
+              <h2 className="text-xl font-black">🕵️ Code de la chasse aux secrets</h2>
+              <p className="mt-2 text-sm text-gray-600">Tu as résolu une énigme ? Saisis ici ton code personnel pour obtenir 10 % de réduction supplémentaire sur la location.</p>
+              <input value={huntCode} onChange={e=>setHuntCode(e.target.value.toUpperCase())} maxLength={20} placeholder="Ex. CHAT1A2B3C4D" className="mt-3 w-full rounded-xl border p-3 font-mono uppercase tracking-wider"/>
+              {huntCode.trim() && <p className="mt-2 text-sm font-semibold text-green-700">Réduction estimée : − {euro(estimatedHuntDiscount)}. Le code sera vérifié avant la création du paiement.</p>}
+              <Link href="/chasse-aux-codes" className="mt-3 inline-block text-sm font-bold text-[#806000] underline">Participer à la chasse aux codes</Link>
+            </section>
+
+            <section className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
               <h2 className="text-xl font-black">📅 Dates de location</h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="font-semibold">Début<input required type="date" min={today} value={start} onChange={(e) => setStart(e.target.value)} className="mt-2 w-full rounded-xl border p-3"/></label>
@@ -213,7 +226,8 @@ export default function PanierPage() {
                 {promotionDiscount > 0 && <p className="flex justify-between text-green-700"><span>Soldes</span><strong>− {euro(promotionDiscount)}</strong></p>}
                 <p className="flex justify-between"><span>Sous-total après soldes</span><strong>{euro(subtotal)}</strong></p>
                 {discountRate > 0 && <p className="flex justify-between text-green-700"><span>Réduction fidélité panier ({discountRate * 100} %)</span><strong>− {euro(discount)}</strong></p>}
-                {partner.active && <p className="flex justify-between text-green-700"><span>Avantage partenaire</span><strong>{partner.discountType === "free" ? "− " + euro(estimatedPartnerDiscount) : "− " + euro(estimatedPartnerDiscount)}</strong></p>}
+                {partner.active && <p className="flex justify-between text-green-700"><span>Avantage partenaire</span><strong>− {euro(estimatedPartnerDiscount)}</strong></p>}
+                {huntCode.trim() && <p className="flex justify-between text-green-700"><span>Code chasse (10 %)</span><strong>− {euro(estimatedHuntDiscount)}</strong></p>}
                 <p className="flex justify-between border-t pt-2 text-lg"><span>Total estimatif location</span><strong>{euro(estimatedTotal)}</strong></p>
                 <p className="flex justify-between"><span>Caution (à part)</span><strong>{euro(caution)}</strong></p>
                 <p className="flex justify-between text-lg text-[#806000]"><span>Acompte estimé (30 %)</span><strong>{euro(deposit)}</strong></p>
