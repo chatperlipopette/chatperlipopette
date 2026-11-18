@@ -115,6 +115,9 @@ export async function POST(request: NextRequest) {
         hosted_checkout: { enabled: true },
       }),
       cache: "no-store",
+    }).catch(async (error) => {
+      if (huntCode) await releaseHuntCode(huntCode, checkoutReference);
+      throw error;
     });
     const payment = await paymentResponse.json().catch(() => ({}));
     if (!paymentResponse.ok || !payment.hosted_checkout_url || !payment.id) {
