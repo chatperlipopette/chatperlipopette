@@ -7,12 +7,11 @@ import { getGames } from "@/lib/games";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function config() { return getConfig(); }
 function hashAnswer(value: string) {
-  return createHash("sha256").update(value.trim().toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\u0300-\u036f]/g, "")).digest("hex");
+  return createHash("sha256").update(value.trim().toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")).digest("hex");
 }
 async function supabase(path: string, init: RequestInit = {}) {
-  const cfg = config();
+  const cfg = getConfig();
   if (!cfg) throw new Error("Configuration Supabase manquante.");
   const response = await fetch(`${cfg.url}/rest/v1/${path}`, {
     ...init,
@@ -27,8 +26,8 @@ export async function GET() {
   if (!(await isAdminSession())) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   try {
     const [clues, codes, games] = await Promise.all([
-      supabase("hunt_clues?select=id,game_code,game_name,clue,active,created_at&order=created_at.desc"),
-      supabase("hunt_codes?select=id,clue_id,code,customer_email,discount_percent,used_at,used_for,created_at&order=created_at.desc"),
+      supabase("hunt_clues?select=id,game_code,game_name,game_codes,game_names,clue,active,discount_percent,validity_days,created_at&order=created_at.desc"),
+      supabase("hunt_codes?select=id,clue_id,code,customer_email,discount_percent,used_at,used_for,created_at,valid_until&order=created_at.desc"),
       getGames(),
     ]);
     return NextResponse.json({ clues, codes, games: games.map(g => ({ code_barre: g.code_barre, nom: g.nom })) });
@@ -43,17 +42,28 @@ export async function POST(request: NextRequest) {
   if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "Requête refusée." }, { status: 403 });
   try {
     const body = await request.json();
-    const gameCode = typeof body.game_code === "string" ? body.game_code.trim() : "";
-    const gameName = typeof body.game_name === "string" ? body.game_name.trim() : "";
+    const gameCodes = Array.isArray(body.game_codes) ? [...new Set(body.game_codes.filter((v: unknown): v is string => typeof v === "string").map((v: string) => v.trim()).filter(Boolean))] : [];
     const clue = typeof body.clue === "string" ? body.clue.trim() : "";
     const answer = typeof body.answer === "string" ? body.answer.trim() : "";
-    if (!gameCode || !gameName || clue.length < 8 || clue.length > 1000 || answer.length < 1 || answer.length > 120) {
-      return NextResponse.json({ error: "Choisis un jeu, écris un indice (8 à 1 000 caractères) et une réponse." }, { status: 400 });
+    const discountPercent = Number(body.discount_percent);
+    const validityDays = Number(body.validity_days);
+    if (!gameCodes.length || gameCodes.length > 30 || clue.length < 8 || clue.length > 1000 || answer.length < 1 || answer.length > 120 ||
+      !Number.isInteger(discountPercent) || discountPercent < 1 || discountPercent > 100 ||
+      !Number.isInteger(validityDays) || validityDays < 1 || validityDays > 365) {
+      return NextResponse.json({ error: "Sélectionne au moins un jeu, saisis une énigme et un code secret, puis règle une réduction de 1 à 100 % et une validité de 1 à 365 jours." }, { status: 400 });
     }
-    const rows = await supabase("hunt_clues?on_conflict=game_code", {
+    const games = await getGames();
+    const selected = gameCodes.map((code: string) => games.find(g => g.code_barre === code)).filter(Boolean);
+    if (selected.length !== gameCodes.length) return NextResponse.json({ error: "Un ou plusieurs jeux sélectionnés ne sont plus dans le catalogue." }, { status: 400 });
+    const gameNames = selected.map(g => g!.nom);
+    const rows = await supabase("hunt_clues?select=id", {
       method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates,return=representation" },
-      body: JSON.stringify({ game_code: gameCode, game_name: gameName, clue, answer_hash: hashAnswer(answer), active: true, updated_at: new Date().toISOString() }),
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        game_code: gameCodes[0], game_name: gameNames.join(", "), game_codes: gameCodes, game_names: gameNames,
+        clue, answer_hash: hashAnswer(answer), discount_percent: discountPercent, validity_days: validityDays,
+        active: true, updated_at: new Date().toISOString(),
+      }),
     });
     return NextResponse.json({ clue: rows?.[0] || null }, { status: 201 });
   } catch (error) {
@@ -67,8 +77,21 @@ export async function PATCH(request: NextRequest) {
   if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "Requête refusée." }, { status: 403 });
   try {
     const body = await request.json();
-    if (typeof body.id !== "string" || typeof body.active !== "boolean") return NextResponse.json({ error: "Modification invalide." }, { status: 400 });
-    await supabase(`hunt_clues?id=eq.${encodeURIComponent(body.id)}`, { method: "PATCH", body: JSON.stringify({ active: body.active, updated_at: new Date().toISOString() }) });
+    if (typeof body.id !== "string") return NextResponse.json({ error: "Modification invalide." }, { status: 400 });
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (typeof body.active === "boolean") patch.active = body.active;
+    if (body.discount_percent !== undefined) {
+      const value = Number(body.discount_percent);
+      if (!Number.isInteger(value) || value < 1 || value > 100) return NextResponse.json({ error: "La réduction doit être comprise entre 1 et 100 %." }, { status: 400 });
+      patch.discount_percent = value;
+    }
+    if (body.validity_days !== undefined) {
+      const value = Number(body.validity_days);
+      if (!Number.isInteger(value) || value < 1 || value > 365) return NextResponse.json({ error: "La validité doit être comprise entre 1 et 365 jours." }, { status: 400 });
+      patch.validity_days = value;
+    }
+    if (Object.keys(patch).length === 1) return NextResponse.json({ error: "Aucune modification fournie." }, { status: 400 });
+    await supabase(`hunt_clues?id=eq.${encodeURIComponent(body.id)}`, { method: "PATCH", body: JSON.stringify(patch) });
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Modification impossible." }, { status: 502 });
