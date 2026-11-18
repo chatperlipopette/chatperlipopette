@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
       if (!codeResponse.ok) return NextResponse.json({ error: "Impossible de vérifier le code de chasse." }, { status: 502 });
       const codeRows = await codeResponse.json();
       const codeRow = codeRows?.[0];
-      const huntExpiry = codeRow?.valid_until || (codeRow?.created_at ? new Date(new Date(codeRow.created_at).getTime() + 90 * 86400000).toISOString() : null);\n      if (!codeRow || codeRow.used_at || !huntExpiry || new Date(huntExpiry).getTime() <= Date.now()) {
+      const huntExpiry = codeRow?.valid_until || (codeRow?.created_at ? new Date(new Date(codeRow.created_at).getTime() + 90 * 86400000).toISOString() : null);
+      if (!codeRow || codeRow.used_at || !huntExpiry || new Date(huntExpiry).getTime() <= Date.now()) {
         return NextResponse.json({ error: "Ce code est inconnu, expiré ou déjà utilisé." }, { status: 400 });
       }
       huntDiscount = Math.round(afterPartner * (Number(codeRow.discount_percent) / 100) * 100) / 100;
