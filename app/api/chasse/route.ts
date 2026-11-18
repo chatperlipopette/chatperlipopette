@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const id = typeof body.id === "string" ? body.id : "";
     const answer = typeof body.answer === "string" ? body.answer : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    if (!id || answer.length < 1 || answer.length > 120 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return NextResponse.json({ error: "Indique une adresse e-mail valide et ta réponse." }, { status: 400 });
+    if (!id || answer.length < 1 || answer.length > 120 || !/^[^\s@]+@[^\\s@]+\.[^\\s@]+$/.test(email)) return NextResponse.json({ error: "Indique une adresse e-mail valide et ta réponse." }, { status: 400 });
     const rows = await db(`hunt_clues?select=id,answer_hash,active&id=eq.${encodeURIComponent(id)}&active=eq.true`);
     const clue = rows?.[0];
     if (!clue || !safeEqual(hashAnswer(answer), clue.answer_hash)) return NextResponse.json({ error: "Ce n'est pas la bonne réponse. Réessaie !" }, { status: 400 });
