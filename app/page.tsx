@@ -32,7 +32,8 @@ export default function Home() {
           </Link>
           <nav aria-label="Navigation principale" className="flex items-center gap-6 font-bold sm:gap-8">
             <Link href="/" className="underline underline-offset-4">Accueil</Link>
-            <Link href="/catalogue" className="transition hover:underline">Catalogue</Link>\n            <Link href="/chasse-aux-codes" className="transition hover:underline">Chasse aux codes</Link>
+            <Link href="/catalogue" className="transition hover:underline">Catalogue</Link>
+            <Link href="/chasse-aux-codes" className="transition hover:underline">Chasse aux codes</Link>
             <a href="#abonnements" className="transition hover:underline">Abonnements</a>
             <a href="#fidelite" className="transition hover:underline">Fidélité</a>
             <Link href="/partenaires" className="transition hover:underline">Espace partenaire</Link>
