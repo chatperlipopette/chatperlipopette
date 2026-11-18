@@ -18,6 +18,7 @@ create table if not exists public.hunt_codes (
   id uuid primary key default gen_random_uuid(),
   clue_id uuid not null references public.hunt_clues(id) on delete cascade,
   code text not null unique,
+  customer_email text,
   discount_percent integer not null default 10 check (discount_percent = 10),
   used_at timestamptz,
   used_for text,
@@ -25,7 +26,11 @@ create table if not exists public.hunt_codes (
 );
 
 create index if not exists hunt_clues_active_idx on public.hunt_clues(active);
+alter table public.hunt_codes add column if not exists customer_email text;
 create index if not exists hunt_codes_clue_idx on public.hunt_codes(clue_id);
+create unique index if not exists hunt_codes_one_per_person_idx
+  on public.hunt_codes(clue_id, lower(customer_email))
+  where customer_email is not null;
 
 alter table public.hunt_clues enable row level security;
 alter table public.hunt_codes enable row level security;
