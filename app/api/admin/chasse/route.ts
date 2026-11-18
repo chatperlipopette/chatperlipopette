@@ -28,7 +28,7 @@ export async function GET() {
   try {
     const [clues, codes, games] = await Promise.all([
       supabase("hunt_clues?select=id,game_code,game_name,clue,active,created_at&order=created_at.desc"),
-      supabase("hunt_codes?select=id,clue_id,code,discount_percent,used_at,used_for,created_at&order=created_at.desc"),
+      supabase("hunt_codes?select=id,clue_id,code,customer_email,discount_percent,used_at,used_for,created_at&order=created_at.desc"),
       getGames(),
     ]);
     return NextResponse.json({ clues, codes, games: games.map(g => ({ code_barre: g.code_barre, nom: g.nom })) });
