@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function hashAnswer(value: string) {
-  return createHash("sha256").update(value.trim().toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")).digest("hex");
+  return createHash("sha256").update(value.trim().toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\u0300-\u036f]/g, "")).digest("hex");
 }
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const id = typeof body.id === "string" ? body.id : "";
     const answer = typeof body.answer === "string" ? body.answer : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    if (!id || answer.length < 1 || answer.length > 120 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return NextResponse.json({ error: "Indique une adresse e-mail valide et le code secret découvert." }, { status: 400 });
+    if (!id || answer.length < 1 || answer.length > 120 || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email)) return NextResponse.json({ error: "Indique une adresse e-mail valide et le code secret découvert." }, { status: 400 });
     const rows = await db(`hunt_clues?select=id,answer_hash,active,discount_percent,validity_days&id=eq.${encodeURIComponent(id)}&active=eq.true`);
     const clue = rows?.[0];
     if (!clue || !safeEqual(hashAnswer(answer), clue.answer_hash)) return NextResponse.json({ error: "Ce n'est pas le bon code secret. Réessaie !" }, { status: 400 });
