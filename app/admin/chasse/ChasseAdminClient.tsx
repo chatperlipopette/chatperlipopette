@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type Game = { code_barre: string; nom: string };
 type Clue = { id: string; game_code: string; game_name: string; clue: string; active: boolean; created_at: string };
-type HuntCode = { id: string; clue_id: string; code: string; discount_percent: number; used_at: string | null; used_for: string | null; created_at: string };
+type HuntCode = { id: string; clue_id: string; code: string; customer_email: string | null; discount_percent: number; used_at: string | null; used_for: string | null; created_at: string };
 
 export default function ChasseAdminClient() {
   const [games, setGames] = useState<Game[]>([]);
@@ -92,7 +92,7 @@ export default function ChasseAdminClient() {
       {loading ? <p className="mt-4">Chargement…</p> : clues.length === 0 ? <p className="mt-4 rounded-xl bg-white p-5">Aucun indice pour le moment.</p> : <div className="mt-4 grid gap-4 md:grid-cols-2">{clues.map(item=><article key={item.id} className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><h3 className="font-black">{item.game_name}</h3><span className={item.active ? "rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-800" : "rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600"}>{item.active ? "Publié" : "Masqué"}</span></div><p className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{item.clue}</p><div className="mt-4 flex gap-2"><button onClick={()=>void toggle(item)} className="rounded-lg border px-3 py-2 text-sm font-bold">{item.active ? "Masquer" : "Publier"}</button><button onClick={()=>void remove(item)} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-700">Supprimer</button></div></article>)}</div>}
     </section>
     <section className="mt-8"><h2 className="text-xl font-black">Codes générés</h2><p className="mt-1 text-sm text-gray-600">Un code est créé après chaque bonne réponse.</p>
-      {codes.length === 0 ? <p className="mt-4 rounded-xl bg-white p-5">Aucun code généré.</p> : <div className="mt-4 overflow-x-auto rounded-2xl bg-white shadow-sm"><table className="w-full text-left text-sm"><thead className="bg-[#F7EBCB]"><tr><th className="p-3">Code</th><th className="p-3">Réduction</th><th className="p-3">Statut</th><th className="p-3">Créé le</th></tr></thead><tbody>{codes.map(code=><tr key={code.id} className="border-t"><td className="p-3 font-mono font-bold">{code.code}</td><td className="p-3">{code.discount_percent} %</td><td className="p-3">{code.used_at ? "Utilisé" : "Disponible"}</td><td className="p-3">{new Date(code.created_at).toLocaleDateString("fr-FR")}</td></tr>)}</tbody></table></div>}
+      {codes.length === 0 ? <p className="mt-4 rounded-xl bg-white p-5">Aucun code généré.</p> : <div className="mt-4 overflow-x-auto rounded-2xl bg-white shadow-sm"><table className="w-full text-left text-sm"><thead className="bg-[#F7EBCB]"><tr><th className="p-3">Code</th><th className="p-3">Participant</th><th className="p-3">Réduction</th><th className="p-3">Statut</th><th className="p-3">Créé le</th></tr></thead><tbody>{codes.map(code=><tr key={code.id} className="border-t"><td className="p-3 font-mono font-bold">{code.code}</td><td className="p-3">{code.customer_email || "—"}</td><td className="p-3">{code.discount_percent} %</td><td className="p-3">{code.used_at ? "Utilisé" : "Disponible"}</td><td className="p-3">{new Date(code.created_at).toLocaleDateString("fr-FR")}</td></tr>)}</tbody></table></div>}
     </section>
   </div></main>;
 }
