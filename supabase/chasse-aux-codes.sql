@@ -1,3 +1,5 @@
+alter table public.hunt_clues drop constraint if exists hunt_clues_game_code_key;
+
 -- Évolution de la chasse : une énigme peut concerner plusieurs jeux
 -- et chaque énigme possède ses propres paramètres de réduction.
 -- À exécuter dans Supabase > SQL Editor après la mise à jour du site.
