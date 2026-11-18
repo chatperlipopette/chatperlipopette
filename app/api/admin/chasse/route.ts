@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Sélectionne au moins un jeu, saisis une énigme et un code secret, puis règle une réduction de 1 à 100 % et une validité de 1 à 365 jours." }, { status: 400 });
     }
     const games = await getGames();
-    const selected = gameCodes.map((code: string) => games.find(g => g.code_barre === code)).filter(Boolean);
+    const selected = gameCodes.map((code: string) => games.find(g => g.code_barre === code)).filter((game): game is NonNullable<typeof game> => game !== undefined);
     if (selected.length !== gameCodes.length) return NextResponse.json({ error: "Un ou plusieurs jeux sélectionnés ne sont plus dans le catalogue." }, { status: 400 });
     const gameNames = selected.map(g => g!.nom);
     const rows = await supabase("hunt_clues?select=id", {
