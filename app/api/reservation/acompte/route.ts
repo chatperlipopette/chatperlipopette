@@ -54,20 +54,54 @@ export async function POST(request: NextRequest) {
     if (partnerId) partner = await getPartnerById(partnerId);
     const partnerRate = partner?.discount_type === "free" ? 1 : partner?.discount_type === "percent" ? Math.min(100, Math.max(0, Number(partner.discount_percent) || 0)) / 100 : 0;
     const partnerDiscount = Math.round(afterBasket * partnerRate * 100) / 100;
-    const total = Math.max(0, Math.round((afterBasket - partnerDiscount) * 100) / 100);
+    const afterPartner = Math.max(0, Math.round((afterBasket - partnerDiscount) * 100) / 100);
+    const huntCode = typeof body?.hunt_code === "string" ? body.hunt_code.trim().toUpperCase() : "";
+    let huntDiscount = 0;
+    if (huntCode) {
+      if (!/^[A-Z0-9]{8,20}$/.test(huntCode)) return NextResponse.json({ error: "Code de chasse invalide." }, { status: 400 });
+      const config = getConfig();
+      if (!config) return NextResponse.json({ error: "Configuration Supabase manquante." }, { status: 503 });
+      const codeResponse = await fetch(`${config.url}/rest/v1/hunt_codes?code=eq.${encodeURIComponent(huntCode)}&select=id,discount_percent,used_at,created_at`, {
+        headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store",
+      });
+      if (!codeResponse.ok) return NextResponse.json({ error: "Impossible de vérifier le code de chasse." }, { status: 502 });
+      const codeRows = await codeResponse.json();
+      const codeRow = codeRows?.[0];
+      if (!codeRow || codeRow.used_at || new Date(codeRow.created_at).getTime() < Date.now() - 90 * 86400000) {
+        return NextResponse.json({ error: "Ce code est inconnu, expiré ou déjà utilisé." }, { status: 400 });
+      }
+      huntDiscount = Math.round(afterPartner * (Number(codeRow.discount_percent) / 100) * 100) / 100;
+    }
+    const total = Math.max(0, Math.round((afterPartner - huntDiscount) * 100) / 100);
     const deposit = Math.round(total * 0.3 * 100) / 100;
     const caution = Math.round(chosen.reduce((sum: number, game: Game) => sum + Math.max(0, Number(game.prix_caution) || 0), 0) * 100) / 100;
     const gameNames = chosen.map((game: Game) => game.nom).join(", ");
+    const checkoutReference = `cp-acompte-${randomUUID()}`;
+    const configForHunt = huntCode ? getConfig() : null;
+    if (huntCode) {
+      const claim = await fetch(`${configForHunt!.url}/rest/v1/rpc/claim_hunt_code`, {
+        method: "POST",
+        headers: { apikey: configForHunt!.key, Authorization: `Bearer ${configForHunt!.key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_code: huntCode, p_reference: checkoutReference }),
+        cache: "no-store",
+      });
+      const claimed = claim.ok ? await claim.json().catch(() => []) : [];
+      if (!claim.ok || !Array.isArray(claimed) || claimed.length === 0) {
+        return NextResponse.json({ error: "Ce code vient d'être utilisé par quelqu'un d'autre. Essaie un autre code." }, { status: 409 });
+      }
+    }
 
     if (total === 0) {
       if (partner) await incrementPartnerUsage(partner.id);
-      return NextResponse.json({ free: true, days, subtotal, promotionDiscount, afterPromotions, basketDiscount, basketRate: basketRate * 100, partnerDiscount, partnerName: partner?.name || null, total, deposit: 0, caution, gameNames });
+      return NextResponse.json({ free: true, days, subtotal, promotionDiscount, afterPromotions, basketDiscount, basketRate: basketRate * 100, partnerDiscount, huntDiscount, huntCode: huntCode || null, partnerName: partner?.name || null, total, deposit: 0, caution, gameNames });
     }
     const apiKey = process.env.SUMUP_API_KEY?.trim();
     const merchantCode = process.env.SUMUP_MERCHANT_CODE?.trim();
-    if (!apiKey || !merchantCode) return NextResponse.json({ error: "Configuration SumUp incomplète dans Vercel." }, { status: 500 });
+    if (!apiKey || !merchantCode) {
+      if (huntCode) await releaseHuntCode(huntCode, checkoutReference);
+      return NextResponse.json({ error: "Configuration SumUp incomplète dans Vercel." }, { status: 500 });
+    }
     const origin = new URL(request.url).origin;
-    const checkoutReference = `cp-acompte-${randomUUID()}`;
     const paymentResponse = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -85,12 +119,13 @@ export async function POST(request: NextRequest) {
     const payment = await paymentResponse.json().catch(() => ({}));
     if (!paymentResponse.ok || !payment.hosted_checkout_url || !payment.id) {
       console.error("SumUp deposit checkout error:", paymentResponse.status, payment);
+      if (huntCode) await releaseHuntCode(huntCode, checkoutReference);
       return NextResponse.json({ error: "SumUp n'a pas pu créer le paiement de l'acompte. Réessaie plus tard." }, { status: 502 });
     }
     if (partner) await incrementPartnerUsage(partner.id);
     return NextResponse.json({
       checkoutUrl: payment.hosted_checkout_url, checkoutId: payment.id, reference: checkoutReference,
-      days, subtotal, promotionDiscount, afterPromotions, basketDiscount, basketRate: basketRate * 100, partnerDiscount,
+      days, subtotal, promotionDiscount, afterPromotions, basketDiscount, basketRate: basketRate * 100, partnerDiscount, huntDiscount, huntCode: huntCode || null,
       partnerName: partner?.name || null, total, deposit, caution, gameNames,
     });
   } catch (error) {
@@ -134,6 +169,17 @@ async function incrementPartnerUsage(id: string) {
     headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ usage_count: count + 1 }), cache: "no-store",
   });
+}
+
+async function releaseHuntCode(code: string, reference: string) {
+  const config = getConfig();
+  if (!config) return;
+  await fetch(`${config.url}/rest/v1/rpc/release_hunt_code`, {
+    method: "POST",
+    headers: { apikey: config.key, Authorization: `Bearer ${config.key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ p_code: code, p_reference: reference }),
+    cache: "no-store",
+  }).catch(() => {});
 }
 
 async function createLegacyCheckout(request: NextRequest, amount: number, game: string) {
