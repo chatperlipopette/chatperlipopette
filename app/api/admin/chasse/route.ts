@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function hashAnswer(value: string) {
-  return createHash("sha256").update(value.trim().toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "")).digest("hex");
+  return createHash("sha256").update(value.trim().toLocaleLowerCase("fr-FR").normalize("NFD").replace(/[\u0300-\u036f]/g, "")).digest("hex");
 }
 async function supabase(path: string, init: RequestInit = {}) {
   const cfg = getConfig();
