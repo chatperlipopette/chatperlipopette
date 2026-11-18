@@ -1,42 +1,34 @@
--- Chasse aux codes secrets Chat'Perlipopette
--- Exécuter ce script une seule fois dans Supabase > SQL Editor.
+-- Évolution de la chasse : une énigme peut concerner plusieurs jeux
+-- et chaque énigme possède ses propres paramètres de réduction.
+-- À exécuter dans Supabase > SQL Editor après la mise à jour du site.
 
-create extension if not exists pgcrypto;
+alter table public.hunt_clues
+  add column if not exists game_codes text[] not null default '{}',
+  add column if not exists game_names text[] not null default '{}',
+  add column if not exists discount_percent integer not null default 10
+    check (discount_percent between 1 and 100),
+  add column if not exists validity_days integer not null default 90
+    check (validity_days between 1 and 365);
 
-create table if not exists public.hunt_clues (
-  id uuid primary key default gen_random_uuid(),
-  game_code text not null unique,
-  game_name text not null,
-  clue text not null,
-  answer_hash text not null,
-  active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+update public.hunt_clues
+set game_codes = case when cardinality(game_codes) = 0 then array[game_code] else game_codes end,
+    game_names = case when cardinality(game_names) = 0 then array[game_name] else game_names end
+where cardinality(game_codes) = 0 or cardinality(game_names) = 0;
 
-create table if not exists public.hunt_codes (
-  id uuid primary key default gen_random_uuid(),
-  clue_id uuid not null references public.hunt_clues(id) on delete cascade,
-  code text not null unique,
-  customer_email text,
-  discount_percent integer not null default 10 check (discount_percent = 10),
-  used_at timestamptz,
-  used_for text,
-  created_at timestamptz not null default now()
-);
+alter table public.hunt_codes
+  add column if not exists valid_until timestamptz;
 
-create index if not exists hunt_clues_active_idx on public.hunt_clues(active);
-alter table public.hunt_codes add column if not exists customer_email text;
-create index if not exists hunt_codes_clue_idx on public.hunt_codes(clue_id);
-create unique index if not exists hunt_codes_one_per_person_idx
-  on public.hunt_codes(clue_id, lower(customer_email))
-  where customer_email is not null;
+alter table public.hunt_codes
+  drop constraint if exists hunt_codes_discount_percent_check;
 
-alter table public.hunt_clues enable row level security;
-alter table public.hunt_codes enable row level security;
+alter table public.hunt_codes
+  add constraint hunt_codes_discount_percent_check
+  check (discount_percent between 1 and 100);
 
--- Aucun accès public direct : lecture et écritures via les routes serveur Next.js
--- qui utilisent SUPABASE_SERVICE_ROLE_KEY. Ne jamais exposer cette clé au navigateur.
+-- Codes déjà créés : conservent leur durée initiale de 90 jours.
+update public.hunt_codes
+set valid_until = created_at + interval '90 days'
+where valid_until is null;
 
 create or replace function public.claim_hunt_code(p_code text, p_reference text)
 returns table(discount_percent integer, code_id uuid)
@@ -50,7 +42,7 @@ begin
      set used_at = now(), used_for = p_reference
    where upper(c.code) = upper(trim(p_code))
      and c.used_at is null
-     and c.created_at > now() - interval '90 days'
+     and coalesce(c.valid_until, c.created_at + interval '90 days') > now()
   returning c.discount_percent, c.id;
 end;
 $$;
