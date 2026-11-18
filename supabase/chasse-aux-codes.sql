@@ -52,3 +52,23 @@ $$;
 
 revoke all on function public.claim_hunt_code(text, text) from public, anon, authenticated;
 grant execute on function public.claim_hunt_code(text, text) to service_role;
+
+create or replace function public.release_hunt_code(p_code text, p_reference text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare changed integer;
+begin
+  update public.hunt_codes
+     set used_at = null, used_for = null
+   where upper(code) = upper(trim(p_code))
+     and used_for = p_reference;
+  get diagnostics changed = row_count;
+  return changed > 0;
+end;
+$$;
+
+revoke all on function public.release_hunt_code(text, text) from public, anon, authenticated;
+grant execute on function public.release_hunt_code(text, text) to service_role;
