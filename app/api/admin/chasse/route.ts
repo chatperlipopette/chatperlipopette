@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
   if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "Requête refusée." }, { status: 403 });
   try {
     const body = await request.json();
-    const gameCodes = Array.isArray(body.game_codes) ? [...new Set(body.game_codes.filter((v: unknown): v is string => typeof v === "string").map((v: string) => v.trim()).filter(Boolean))] : [];
+    const rawGameCodes: unknown[] = Array.isArray(body.game_codes) ? body.game_codes : [];
+    const gameCodes: string[] = Array.from(new Set(rawGameCodes.filter((value): value is string => typeof value === "string").map(value => value.trim()).filter(value => value.length > 0)));
     const clue = typeof body.clue === "string" ? body.clue.trim() : "";
     const answer = typeof body.answer === "string" ? body.answer.trim() : "";
     const discountPercent = Number(body.discount_percent);
@@ -53,8 +54,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Sélectionne au moins un jeu, saisis une énigme et un code secret, puis règle une réduction de 1 à 100 % et une validité de 1 à 365 jours." }, { status: 400 });
     }
     const games = await getGames();
-    const selected = gameCodes.map((code: string) => games.find(g => g.code_barre === code)).filter((game): game is NonNullable<typeof game> => game !== undefined);
-    if (selected.length !== gameCodes.length) return NextResponse.json({ error: "Un ou plusieurs jeux sélectionnés ne sont plus dans le catalogue." }, { status: 400 });
+    const foundGames = gameCodes.map(code => games.find(g => g.code_barre === code));
+    if (foundGames.some(game => game === undefined)) return NextResponse.json({ error: "Un ou plusieurs jeux sélectionnés ne sont plus dans le catalogue." }, { status: 400 });
+    const selected = foundGames as Awaited<ReturnType<typeof getGames>>;
     const gameNames = selected.map(g => g!.nom);
     const rows = await supabase("hunt_clues?select=id", {
       method: "POST",
