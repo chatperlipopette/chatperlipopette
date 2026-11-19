@@ -61,13 +61,14 @@ export async function POST(request: NextRequest) {
       if (!/^[A-Z0-9]{8,20}$/.test(huntCode)) return NextResponse.json({ error: "Code de chasse invalide." }, { status: 400 });
       const config = getConfig();
       if (!config) return NextResponse.json({ error: "Configuration Supabase manquante." }, { status: 503 });
-      const codeResponse = await fetch(`${config.url}/rest/v1/hunt_codes?code=eq.${encodeURIComponent(huntCode)}&select=id,discount_percent,used_at,created_at`, {
+      const codeResponse = await fetch(`${config.url}/rest/v1/hunt_codes?code=eq.${encodeURIComponent(huntCode)}&select=id,discount_percent,used_at,created_at,valid_until`, {
         headers: { apikey: config.key, Authorization: `Bearer ${config.key}` }, cache: "no-store",
       });
       if (!codeResponse.ok) return NextResponse.json({ error: "Impossible de vérifier le code de chasse." }, { status: 502 });
       const codeRows = await codeResponse.json();
       const codeRow = codeRows?.[0];
-      if (!codeRow || codeRow.used_at || new Date(codeRow.created_at).getTime() < Date.now() - 90 * 86400000) {
+      const huntExpiry = codeRow?.valid_until || (codeRow?.created_at ? new Date(new Date(codeRow.created_at).getTime() + 90 * 86400000).toISOString() : null);
+      if (!codeRow || codeRow.used_at || !huntExpiry || new Date(huntExpiry).getTime() <= Date.now()) {
         return NextResponse.json({ error: "Ce code est inconnu, expiré ou déjà utilisé." }, { status: 400 });
       }
       huntDiscount = Math.round(afterPartner * (Number(codeRow.discount_percent) / 100) * 100) / 100;

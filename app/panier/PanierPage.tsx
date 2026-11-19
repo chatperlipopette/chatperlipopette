@@ -71,8 +71,9 @@ export default function PanierPage() {
   const partnerRate = partner.active ? (partner.discountType === "free" ? 1 : Math.min(100, Math.max(0, Number(partner.discountPercent) || 0)) / 100) : 0;
   const estimatedPartnerDiscount = Math.round(total * partnerRate * 100) / 100;
   const afterPartner = Math.max(0, Math.round((total - estimatedPartnerDiscount) * 100) / 100);
-  const estimatedHuntDiscount = huntCode.trim() ? Math.round(afterPartner * 0.10 * 100) / 100 : 0;
-  const estimatedTotal = Math.max(0, Math.round((afterPartner - estimatedHuntDiscount) * 100) / 100);
+  // La réduction chasse est configurée par énigme et calculée côté serveur au paiement.
+  // Ne pas afficher une estimation fixe qui pourrait être différente du pourcentage réel.
+  const estimatedTotal = afterPartner;
   const deposit = Math.round(estimatedTotal * 0.3 * 100) / 100;
   const caution = items.reduce((sum, item) => sum + Math.max(0, Number(item.prix_caution) || 0), 0);
 
@@ -204,9 +205,9 @@ export default function PanierPage() {
 
             <section className="rounded-2xl border border-[#EADCB9] bg-white p-5 shadow-sm">
               <h2 className="text-xl font-black">🕵️ Code de la chasse aux secrets</h2>
-              <p className="mt-2 text-sm text-gray-600">Tu as résolu une énigme ? Saisis ici ton code personnel pour obtenir 10 % de réduction supplémentaire sur la location.</p>
+              <p className="mt-2 text-sm text-gray-600">Tu as résolu une énigme ? Saisis ici ton code personnel. La réduction configurée pour ton énigme sera vérifiée et appliquée avant le paiement.</p>
               <input value={huntCode} onChange={e=>setHuntCode(e.target.value.toUpperCase())} maxLength={20} placeholder="Ex. CHAT1A2B3C4D" className="mt-3 w-full rounded-xl border p-3 font-mono uppercase tracking-wider"/>
-              {huntCode.trim() && <p className="mt-2 text-sm font-semibold text-green-700">Réduction estimée : − {euro(estimatedHuntDiscount)}. Le code sera vérifié avant la création du paiement.</p>}
+              {huntCode.trim() && <p className="mt-2 text-sm font-semibold text-green-700">Code saisi : la réduction sera calculée après vérification, avant le paiement.</p>}
               <Link href="/chasse-aux-codes" className="mt-3 inline-block text-sm font-bold text-[#806000] underline">Participer à la chasse aux codes</Link>
             </section>
 
@@ -227,7 +228,7 @@ export default function PanierPage() {
                 <p className="flex justify-between"><span>Sous-total après soldes</span><strong>{euro(subtotal)}</strong></p>
                 {discountRate > 0 && <p className="flex justify-between text-green-700"><span>Réduction fidélité panier ({discountRate * 100} %)</span><strong>− {euro(discount)}</strong></p>}
                 {partner.active && <p className="flex justify-between text-green-700"><span>Avantage partenaire</span><strong>− {euro(estimatedPartnerDiscount)}</strong></p>}
-                {huntCode.trim() && <p className="flex justify-between text-green-700"><span>Code chasse (10 %)</span><strong>− {euro(estimatedHuntDiscount)}</strong></p>}
+                {huntCode.trim() && <p className="text-sm text-green-700">Réduction du code chasse : calculée après vérification avant paiement.</p>}
                 <p className="flex justify-between border-t pt-2 text-lg"><span>Total estimatif location</span><strong>{euro(estimatedTotal)}</strong></p>
                 <p className="flex justify-between"><span>Caution (à part)</span><strong>{euro(caution)}</strong></p>
                 <p className="flex justify-between text-lg text-[#806000]"><span>Acompte estimé (30 %)</span><strong>{euro(deposit)}</strong></p>
