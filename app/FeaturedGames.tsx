@@ -69,11 +69,6 @@ export default async function FeaturedGames() {
       )}
       {nouveautés.length === 0 && coupsDeCoeur.length === 0 && jeuxADecouvrir.length > 0 && (
         <div>
-          <div className="mb-5">
-            <p className="font-extrabold uppercase tracking-widest text-[#9A6B00]">La sélection Chat’Perlipopette</p>
-            <h2 className="mt-2 text-3xl font-black">Quelques jeux à découvrir</h2>
-            <p className="mt-2 text-[#706653]">Une petite sélection issue du catalogue, pour trouver votre prochaine partie.</p>
-          </div>
           {renderGames(jeuxADecouvrir, "À découvrir")}
         </div>
       )}
