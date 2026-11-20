@@ -22,9 +22,7 @@ export default function Home() {
           </Link>
           <nav aria-label="Navigation principale" className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-semibold">
             <Link href="/catalogue" className="hover:underline">Catalogue</Link>
-            <Link href="/qui-suis-je" className="hover:underline">Qui suis-je ?</Link>
             <Link href="/chasse-aux-codes" className="hover:underline">Chasse aux codes</Link>
-            <Link href="/partenaires" className="hover:underline">Partenaires</Link>
           </nav>
         </div>
       </header>
