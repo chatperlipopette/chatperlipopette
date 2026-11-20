@@ -23,7 +23,8 @@ export default function Home() {
           <nav aria-label="Navigation principale" className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-semibold">
             <Link href="/catalogue" className="hover:underline">Catalogue</Link>
             <Link href="/chasse-aux-codes" className="hover:underline">Chasse aux codes</Link>
-            <Link href="/abonnement" className="hover:underline">Fidélité</Link>
+            <Link href="/fidelite" className="hover:underline">Fidélité</Link>
+            <Link href="/abonnement" className="hover:underline">Abonnement</Link>
           </nav>
         </div>
       </header>
@@ -105,7 +106,7 @@ export default function Home() {
       <footer className="bg-[#E8B223]">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div><p className="font-extrabold">Chat'Perlipopette</p><p className="mt-1 text-sm">Location de jeux de société à Roquettes et alentours.</p><p className="mt-1 text-xs">Ronronnez de plaisir, jouez sans limite !</p></div>
-          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold"><Link href="/catalogue" className="hover:underline">Catalogue</Link><Link href="/qui-suis-je" className="hover:underline">Qui suis-je ?</Link><Link href="/partenaires" className="hover:underline">Partenaires</Link><Link href="/chasse-aux-codes" className="hover:underline">Chasse aux codes</Link></div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold"><Link href="/catalogue" className="hover:underline">Catalogue</Link><Link href="/fidelite" className="hover:underline">Fidélité</Link><Link href="/abonnement" className="hover:underline">Abonnement</Link><Link href="/qui-suis-je" className="hover:underline">Qui suis-je ?</Link><Link href="/partenaires" className="hover:underline">Partenaires</Link><Link href="/chasse-aux-codes" className="hover:underline">Chasse aux codes</Link></div>
           <p className="text-xs">© {new Date().getFullYear()} Chat'Perlipopette</p>
         </div>
       </footer>
