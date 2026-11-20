@@ -19,5 +19,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${siteUrl}/qui-suis-je`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
   ];
 }
