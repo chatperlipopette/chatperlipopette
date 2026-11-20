@@ -22,7 +22,10 @@ export default async function FeaturedGames() {
     a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" })
   ).slice(0, 4);
 
-  if (nouveautés.length === 0 && coupsDeCoeur.length === 0) return null;
+  const jeuxADecouvrir = games
+    .filter((game) => game.disponibilite !== "indisponible")
+    .sort((a, b) => a.nom.localeCompare(b.nom, "fr", { sensitivity: "base" }))
+    .slice(0, 4);
 
   const renderGames = (items: Game[], badgeLabel: string) => (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -62,6 +65,16 @@ export default async function FeaturedGames() {
           </div>
           {renderGames(coupsDeCoeur, "❤️ Coup de cœur")}
           <div className="mt-5"><Link href="/catalogue" className="font-extrabold underline underline-offset-4">Voir tous les coups de cœur dans le catalogue →</Link></div>
+        </div>
+      )}
+      {nouveautés.length === 0 && coupsDeCoeur.length === 0 && jeuxADecouvrir.length > 0 && (
+        <div>
+          <div className="mb-5">
+            <p className="font-extrabold uppercase tracking-widest text-[#9A6B00]">La sélection Chat’Perlipopette</p>
+            <h2 className="mt-2 text-3xl font-black">Quelques jeux à découvrir</h2>
+            <p className="mt-2 text-[#706653]">Une petite sélection issue du catalogue, pour trouver votre prochaine partie.</p>
+          </div>
+          {renderGames(jeuxADecouvrir, "À découvrir")}
         </div>
       )}
     </section>
